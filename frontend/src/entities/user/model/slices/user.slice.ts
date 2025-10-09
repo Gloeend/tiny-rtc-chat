@@ -1,4 +1,6 @@
+import { CookieKeys } from '@entities/user'
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
+import Cookies from 'js-cookie'
 
 import type { User } from '../types'
 
@@ -10,11 +12,11 @@ const userSlice = createSlice({
 	initialState: INITIAL_STATE,
 	name: 'user',
 	reducers: {
-		setUser: (state, { payload }: PayloadAction<Partial<UserSlice>>) => {
-			Object.assign(state, payload)
+		login: (state, { payload }: PayloadAction<UserSlice['username']>) => {
+			state.username = payload
+			Cookies.set(CookieKeys.USERNAME, payload)
 		}
-	},
-	selectors: {}
+	}
 })
 
 export const userSliceReducer = userSlice.reducer
