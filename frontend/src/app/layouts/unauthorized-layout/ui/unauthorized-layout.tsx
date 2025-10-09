@@ -1,11 +1,10 @@
-import { Header } from '@widgets/header'
+import { withAuth } from '@entities/user'
 import { Outlet } from 'react-router'
 
-export const UnauthorizedLayout = () => {
+export const UnauthorizedLayout = withAuth(() => {
 	return (
 		<>
-			<Header />
 			<Outlet />
 		</>
 	)
-}
+})
