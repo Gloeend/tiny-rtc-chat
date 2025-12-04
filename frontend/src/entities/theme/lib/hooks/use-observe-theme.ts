@@ -13,7 +13,6 @@ export const useObserveTheme = () => {
 		const opposite = theme === 'light' ? 'dark' : 'light'
 		html.classList.remove(opposite)
 
-		// Добавляем текущую тему
 		html.classList.add(theme)
 	}, [theme])
 }

@@ -5,7 +5,7 @@ import { useAppDispatch } from '@shared/lib'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router'
 
-import { type LoginSchema, useLoginSchema } from '../../model/schemas/use-login-schema'
+import { type LoginSchema, useLoginSchema } from './use-login-schema.ts'
 
 export const useLoginForm = () => {
 	const dispatch = useAppDispatch()

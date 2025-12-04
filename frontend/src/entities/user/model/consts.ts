@@ -1,3 +1,4 @@
-export const CookieKeys = {
-	USERNAME: 'username'
+export const StorageKeys = {
+	USERNAME: 'username',
+	AVATAR: 'avatar'
 }

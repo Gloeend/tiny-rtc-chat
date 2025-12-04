@@ -1,12 +1,12 @@
 import { withAuth } from '@entities/user'
-import { Header } from '@widgets/header'
+import { SwitchThemeButton } from '@widgets/switch-theme-button'
 import { Outlet } from 'react-router'
 
 export const AuthorizedLayout = withAuth(() => {
 	return (
 		<>
-			<Header />
 			<Outlet />
+			<SwitchThemeButton />
 		</>
 	)
 })
