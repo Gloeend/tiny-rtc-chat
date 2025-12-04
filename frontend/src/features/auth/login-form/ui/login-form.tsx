@@ -21,13 +21,13 @@ export const LoginForm = ({ className }: { className?: string }) => {
 			<form onSubmit={onSubmit} className={cn('flex flex-col gap-6', className)}>
 				<Card>
 					<CardHeader>
-						<CardTitle>Login to your account</CardTitle>
-						<CardDescription>Enter your username below to continue</CardDescription>
+						<CardTitle>Войдите в аккаунт</CardTitle>
+						<CardDescription>Введите ваш логин, чтобы продолжить.</CardDescription>
 					</CardHeader>
 					<CardContent>
 						<FieldGroup>
 							<Field>
-								<FormLabel htmlFor='email'>Username</FormLabel>
+								<FormLabel htmlFor='email'>Логин</FormLabel>
 								<FormField
 									name='username'
 									control={control}
@@ -38,12 +38,12 @@ export const LoginForm = ({ className }: { className?: string }) => {
 													<Input
 														id='username'
 														type='text'
-														placeholder='Type your username'
+														placeholder='BananaLover2001'
 														required
 														{...field}
 														value={field.value || ''}
 													/>
-													<FormMessage />
+													<FormMessage className='mt-1' />
 												</div>
 											</FormControl>
 										</FormItem>
@@ -53,7 +53,7 @@ export const LoginForm = ({ className }: { className?: string }) => {
 
 							<Field>
 								<Button type='submit' disabled={!isValid || isSubmitting}>
-									{isSubmitting ? <Loader className='animate-spin' /> : 'Login'}
+									{isSubmitting ? <Loader className='animate-spin' /> : 'Продолжить'}
 								</Button>
 							</Field>
 						</FieldGroup>

@@ -29,7 +29,11 @@ export const useLoginForm = () => {
 		// TODO: MOCK
 		await new Promise<void>((resolve) => setTimeout(() => resolve(), 1000))
 
-		dispatch(userSliceActions.login(parsed.data.username))
+		dispatch(
+			userSliceActions.login({
+				username: parsed.data.username
+			})
+		)
 		navigate(RoutePath[AppRoutes.MAIN])
 	}
 

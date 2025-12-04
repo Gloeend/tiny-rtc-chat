@@ -8,17 +8,22 @@ export const useReceiveUserFromStorage = () => {
 	const dispatch = useAppDispatch()
 
 	useEffect(() => {
+		const userId = localStorage.getItem(StorageKeys.USER_ID)
 		const username = localStorage.getItem(StorageKeys.USERNAME)
 		const avatar = localStorage.getItem(StorageKeys.AVATAR)
 
-		if (!username || z.string().safeParse(username).error) {
+		if (!userId || !username || z.string().safeParse(userId).error || z.string().safeParse(username).error) {
 			setIsReceived(true)
 			return
 		}
 
-		dispatch(userSliceActions.login(username))
+		dispatch(
+			userSliceActions.login({
+				username: username
+			})
+		)
 
-		if (avatar && typeof avatar === 'string' && avatar.length > 0) {
+		if (avatar && avatar.length > 0) {
 			dispatch(userSliceActions.setAvatar(avatar))
 		}
 
