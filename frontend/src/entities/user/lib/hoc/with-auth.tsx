@@ -5,11 +5,11 @@ import type { ComponentType } from 'react'
 import { Navigate, useLocation } from 'react-router'
 
 import { getUserUsername } from '../../model/selectors/user.selectors'
-import { useReceiveUserFromCookies } from '../hooks/use-receive-user-from-cookies'
+import { useReceiveUserFromStorage } from '../hooks/use-receive-user-from-storage.ts'
 
 export function withAuth<P extends object>(Component: ComponentType<P>) {
 	return (props: P) => {
-		const { isReceived } = useReceiveUserFromCookies()
+		const { isReceived } = useReceiveUserFromStorage()
 
 		const { pathname } = useLocation()
 		const username = useAppSelector(getUserUsername)

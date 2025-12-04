@@ -1,6 +1,5 @@
-import { CookieKeys } from '@entities/user'
+import { StorageKeys } from '@entities/user'
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
-import Cookies from 'js-cookie'
 
 import type { User } from '../types'
 
@@ -14,7 +13,11 @@ const userSlice = createSlice({
 	reducers: {
 		login: (state, { payload }: PayloadAction<UserSlice['username']>) => {
 			state.username = payload
-			Cookies.set(CookieKeys.USERNAME, payload)
+			localStorage.setItem(StorageKeys.USERNAME, payload)
+		},
+		setAvatar: (state, { payload }: PayloadAction<string>) => {
+			state.avatar = payload
+			localStorage.setItem(StorageKeys.AVATAR, payload)
 		}
 	}
 })

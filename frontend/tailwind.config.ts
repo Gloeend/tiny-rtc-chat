@@ -2,9 +2,16 @@ import { type Config } from 'tailwindcss'
 
 export default {
 	content: ['./index.html', './src/**/*.{ts,tsx,js,jsx}'],
+	darkMode: 'class',
 	theme: {
 		extend: {
+			letterSpacing: {
+				default: '-0.02em'
+			},
 			colors: {
+				tiny: {
+					'900': 'hsl(var(--tiny-900))'
+				},
 				primary: 'hsl(var(--primary))',
 				'primary-foreground': 'hsl(var(--primary-foreground))',
 				background: 'hsl(var(--background))',
@@ -20,6 +27,9 @@ export default {
 			},
 			borderColor: {
 				DEFAULT: 'var(--border)'
+			},
+			backgroundImage: {
+				'channel-gradient': 'linear-gradient(180deg, #1F1F1F 0%, #292929 100%)'
 			}
 		}
 	},

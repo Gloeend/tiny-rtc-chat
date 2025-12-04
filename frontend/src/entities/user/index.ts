@@ -4,4 +4,4 @@ export { getUser, getUserUsername } from './model/selectors/user.selectors'
 
 export { withAuth } from './lib/hoc/with-auth'
 
-export { CookieKeys } from './model/consts'
+export { StorageKeys } from './model/consts'
