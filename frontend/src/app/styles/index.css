@@ -85,3 +85,31 @@
     max-width: 1312px;
     margin: 0 auto;
 }
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: var(--radius);
+}
+
+::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground));
+    border-radius: var(--radius);
+    border: 2px solid hsl(var(--muted));
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--foreground));
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground));
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--accent-foreground));
+}
