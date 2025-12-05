@@ -17,3 +17,9 @@ export type GetRoomsResponseDTO = {
 }
 
 export type GetRoomByIdResponseDTO = Channel
+
+export type CreateRoomResponseDTO = {
+	roomId: string
+	maxParticipants: number
+	createdAt: string
+}
