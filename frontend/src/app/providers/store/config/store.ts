@@ -1,4 +1,5 @@
 import { channelSliceReducer } from '@entities/channel'
+import { rtcSessionSliceReducer } from '@entities/rtc-session'
 import { chatSocketMiddleware, socketSliceReducer } from '@entities/socket'
 import { themeSliceReducer } from '@entities/theme'
 import { userSliceReducer } from '@entities/user'
@@ -12,6 +13,7 @@ export const store = configureStore({
 		theme: themeSliceReducer,
 		socket: socketSliceReducer,
 		channel: channelSliceReducer,
+		rtcSession: rtcSessionSliceReducer,
 		[httpBaseApi.reducerPath]: httpBaseApi.reducer
 	},
 	middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat([httpBaseApi.middleware, chatSocketMiddleware]),
