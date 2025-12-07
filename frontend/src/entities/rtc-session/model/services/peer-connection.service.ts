@@ -1,12 +1,14 @@
+import { MediaStreamService } from '@entities/media-stream/@x'
 import { rtcSessionSliceActions } from '@entities/rtc-session'
 
 export class PeerConnectionService {
 	private dispatch: (action: unknown) => void
 	private peerConnection: RTCPeerConnection | null = null
-	private tracks: Set<MediaStreamTrack> = new Set()
+	private mediaStreamService: MediaStreamService
 
-	constructor(dispatch: (action: unknown) => void, iceServers: RTCIceServer[]) {
+	constructor(dispatch: (action: unknown) => void, mediaStreamService: MediaStreamService, iceServers: RTCIceServer[]) {
 		this.dispatch = dispatch
+		this.mediaStreamService = mediaStreamService
 		this.peerConnection = new RTCPeerConnection({
 			iceServers: iceServers
 		})
@@ -25,7 +27,7 @@ export class PeerConnectionService {
 	}
 
 	private onTrack = (ev: RTCTrackEvent) => {
-		this.tracks.add(ev.track)
+		this.mediaStreamService.addTrack(ev.track)
 	}
 
 	private onConnectionsStateChange = () => {
@@ -63,14 +65,10 @@ export class PeerConnectionService {
 	public close() {
 		this.peerConnection?.close()
 		this.peerConnection = null
-		this.tracks.clear()
+		this.mediaStreamService.clear()
 	}
 
 	public getPeerConnection(): RTCPeerConnection | null {
 		return this.peerConnection
-	}
-
-	public getTracks = () => {
-		return this.tracks
 	}
 }
