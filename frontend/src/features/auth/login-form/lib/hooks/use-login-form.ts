@@ -26,7 +26,6 @@ export const useLoginForm = () => {
 			return
 		}
 
-		// TODO: MOCK
 		await new Promise<void>((resolve) => setTimeout(() => resolve(), 1000))
 
 		dispatch(

@@ -2,7 +2,6 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 import { defineConfig, loadEnv } from 'vite'
 
-// https://vite.dev/config/
 export default defineConfig(({ mode }) => {
 	loadEnv(mode, process.cwd(), 'VITE_')
 
@@ -10,6 +9,9 @@ export default defineConfig(({ mode }) => {
 		plugins: [react()],
 		define: {
 			global: 'window'
+		},
+		server: {
+			host: '0.0.0.0'
 		},
 		resolve: {
 			alias: {

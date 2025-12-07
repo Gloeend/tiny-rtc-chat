@@ -1,25 +1,30 @@
 import { StorageKeys, userSliceActions } from '@entities/user'
 import { useAppDispatch } from '@shared/lib'
-import { useEffect, useState } from 'react'
-import { z } from 'zod'
+import { useState } from 'react'
+import { useStore } from 'react-redux'
 
 export const useReceiveUserFromStorage = () => {
-	const [isReceived, setIsReceived] = useState<null | boolean>(null)
+	const store = useStore()
 	const dispatch = useAppDispatch()
 
-	useEffect(() => {
+	const [isReceived] = useState(() => {
+		const state = store.getState() as { user: { userId?: string } }
+		if (state.user?.userId) {
+			return true
+		}
+
 		const userId = localStorage.getItem(StorageKeys.USER_ID)
 		const username = localStorage.getItem(StorageKeys.USERNAME)
 		const avatar = localStorage.getItem(StorageKeys.AVATAR)
 
-		if (!userId || !username || z.string().safeParse(userId).error || z.string().safeParse(username).error) {
-			setIsReceived(true)
-			return
+		if (!userId || !username) {
+			return true
 		}
 
 		dispatch(
 			userSliceActions.login({
-				username: username
+				username: username,
+				userId: userId
 			})
 		)
 
@@ -27,8 +32,8 @@ export const useReceiveUserFromStorage = () => {
 			dispatch(userSliceActions.setAvatar(avatar))
 		}
 
-		setIsReceived(true)
-	}, [dispatch])
+		return true
+	})
 
 	return { isReceived }
 }

@@ -17,9 +17,18 @@ const userSlice = createSlice({
 			{ payload }: PayloadAction<Omit<UserSlice, 'avatar' | 'userId'> & Partial<Pick<UserSlice, 'userId'>>>
 		) => {
 			state.username = payload.username
+			const userId = payload.userId ?? uuid()
+			state.userId = userId
 
-			localStorage.setItem(StorageKeys.USERNAME, payload.username)
-			localStorage.setItem(StorageKeys.USER_ID, payload.userId ?? uuid())
+			const storage = {
+				userId: localStorage.getItem(StorageKeys.USER_ID),
+				username: localStorage.getItem(StorageKeys.USERNAME)
+			}
+
+			if (storage.userId !== userId || storage.username !== payload.username) {
+				localStorage.setItem(StorageKeys.USERNAME, payload.username)
+				localStorage.setItem(StorageKeys.USER_ID, userId)
+			}
 		},
 		setAvatar: (state, { payload }: PayloadAction<string>) => {
 			state.avatar = payload
