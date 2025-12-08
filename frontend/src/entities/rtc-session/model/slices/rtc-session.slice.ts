@@ -1,6 +1,7 @@
-import { isLocalCandidate } from '@entities/rtc-session/lib/isLocalCandidate.ts'
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import { ENV_CONFIG } from '@shared/config/environment-config'
+
+import { isLocalCandidate } from '../../lib/isLocalCandidate'
 
 type InitialState = {
 	iceCandidates: Record<string, true>

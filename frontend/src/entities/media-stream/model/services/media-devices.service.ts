@@ -30,7 +30,7 @@ export class MediaDevicesService {
 		return result
 	}
 
-	async getDevices(): Promise<{
+	public async getDevices(): Promise<{
 		video: MediaDeviceInfo[]
 		audio: MediaDeviceInfo[]
 		audioOutput: MediaDeviceInfo[]
@@ -48,8 +48,8 @@ export class MediaDevicesService {
 		return devices.filter((d) => d.kind === kind && d.label !== '')
 	}
 
-	async resolveDeviceId(deviceId: string, kind: MediaDeviceKind): Promise<string | null> {
-		if (deviceId !== 'default') return deviceId
+	public async resolveDeviceId(deviceId: string, kind: MediaDeviceKind): Promise<MediaDeviceInfo | null> {
+		if (deviceId !== 'default') return null
 
 		const devices = await navigator.mediaDevices.enumerateDevices()
 		const defaultDevice = devices.find((d) => d.deviceId === 'default' && d.kind === kind)
@@ -60,15 +60,15 @@ export class MediaDevicesService {
 			(d) => d.groupId === defaultDevice.groupId && d.kind === kind && d.deviceId !== 'default'
 		)
 
-		return realDevice?.deviceId ?? null
+		return realDevice ?? null
 	}
 
-	async isDeviceAvailable(deviceId: string, kind: MediaDeviceKind): Promise<boolean> {
+	public async isDeviceAvailable(deviceId: string, kind: MediaDeviceKind): Promise<boolean> {
 		const devices = await navigator.mediaDevices.enumerateDevices()
 		return devices.some((d) => d.deviceId === deviceId && d.kind === kind && d.label !== '')
 	}
 
-	onDeviceChange(callback: (changes: DeviceChanges) => void, debounceMs = 300): () => void {
+	public onDeviceChange(callback: (changes: DeviceChanges) => void, debounceMs = 300): () => void {
 		let previousDevices: MediaDeviceInfo[] = []
 		let timeoutId: number | null = null
 
