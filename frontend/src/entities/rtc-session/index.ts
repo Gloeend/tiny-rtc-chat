@@ -4,4 +4,4 @@ export {
 	getRtcSessionIceGatheringState,
 	getRtcSessionConnectionState
 } from './model/selectors/rtc-session.selectors'
-export { PeerConnectionService } from './model/services/peer-connection.service.ts'
+export { PeerConnectionService } from './model/services/peer-connection.service'
