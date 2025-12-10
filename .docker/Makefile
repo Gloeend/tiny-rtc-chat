@@ -2,32 +2,17 @@
 
 GREEN  := $(shell tput -Txterm setaf 2)
 YELLOW := $(shell tput -Txterm setaf 3)
-WHITE  := $(shell tput -Txterm setaf 7)
 RESET  := $(shell tput -Txterm sgr0)
 
 help:
 	@echo '${GREEN}Tiny RTC Chat - Docker Management${RESET}'
-	@echo ''
-	@echo 'Usage:'
-	@echo '  ${YELLOW}make${RESET} ${GREEN}<target>${RESET}'
-	@echo ''
-	@echo 'Targets:'
-	@echo '  ${GREEN}prod${RESET}        Start production environment (with nginx proxy)'
-	@echo '  ${GREEN}dev${RESET}         Start development environment'
-	@echo '  ${GREEN}down${RESET}        Stop all containers'
-	@echo '  ${GREEN}logs${RESET}        View logs'
-	@echo '  ${GREEN}clean${RESET}       Stop and remove all containers, volumes, networks'
-	@echo '  ${GREEN}build-all${RESET}   Build all containers'
-	@echo '  ${GREEN}ssl-setup${RESET}   Generate self-signed SSL certificates'
-	@echo '  ${GREEN}deploy${RESET}      Full deployment process'
-	@echo '  ${GREEN}help${RESET}        Show this help'
+	@echo 'Usage: make <target>'
+	@echo 'Targets: prod, dev, down, logs, clean, build-all, ssl-setup, deploy'
 
 prod:
 	@echo "${GREEN}Starting production environment...${RESET}"
 	docker compose up -d nginx-proxy frontend-prod backend-prod
-	@echo "${GREEN}Production environment started!${RESET}"
-	@echo "Frontend: https://localhost"
-	@echo "Backend API: https://localhost/api/health"
+	@echo "${GREEN}Production started!${RESET}"
 
 dev:
 	@echo "${GREEN}Starting development environment...${RESET}"
@@ -44,33 +29,17 @@ clean:
 	@echo "${YELLOW}Cleaning up...${RESET}"
 	docker compose down -v
 	docker system prune -f
-	@echo "${GREEN}Cleanup completed!${RESET}"
+	@echo "${GREEN}Cleanup done!${RESET}"
 
 build-all:
 	@echo "${GREEN}Building all containers...${RESET}"
 	docker compose build
 
 ssl-setup:
-	@echo "${GREEN}Generating self-signed SSL certificates...${RESET}"
-	mkdir -p ../ssl  # <-- Изменено
+	@echo "${GREEN}Generating self-signed SSL...${RESET}"
+	mkdir -p ../ssl
 	openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-		-keyout ../ssl/gloeend.space.key \  # <-- Изменено
-		-out ../ssl/gloeend.space.crt \    # <-- Изменено
+		-keyout ../ssl/gloeend.space.key \
+		-out ../ssl/gloeend.space.crt \
 		-subj "/C=RU/ST=Moscow/L=Moscow/O=TinyRTC/CN=gloeend.space"
-	@echo "${GREEN}SSL certificates generated in ssl/ directory${RESET}"
-
-deploy:
-	@echo "${GREEN}Deploying Tiny RTC Chat...${RESET}"
-	@echo "${YELLOW}1. Stopping existing containers...${RESET}"
-	docker compose down
-	@echo "${YELLOW}2. Building new containers...${RESET}"
-	docker compose build
-	@echo "${YELLOW}3. Starting production environment...${RESET}"
-	docker compose up -d
-	@echo "${GREEN}Deployment complete!${RESET}"
-	@echo "Frontend: https://localhost"
-	@echo "Backend API: https://localhost/api/health"
-
-status:
-	@echo "${GREEN}Container status:${RESET}"
-	docker compose ps
+	@echo "${GREEN}SSL ready in ssl/ directory${RESET}"

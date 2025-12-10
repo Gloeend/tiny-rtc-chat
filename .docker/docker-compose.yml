@@ -4,9 +4,6 @@ networks:
   tiny-rtc-network:
     driver: bridge
 
-volumes:
-  ssl-data:
-
 services:
   nginx-proxy:
     image: nginx:alpine
@@ -17,21 +14,19 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ../ssl:/etc/nginx/ssl:ro  # <-- Исправлен путь
+      - ../ssl:/etc/nginx/ssl:ro
     networks:
       - tiny-rtc-network
-    restart: unless-stopped
     depends_on:
       - frontend-prod
       - backend-prod
+    restart: unless-stopped
 
   frontend-prod:
     build:
       context: ../frontend
       dockerfile: .docker/Dockerfile
-      args:
-        - NODE_ENV=production
-    container_name: tiny-rtc-frontend
+    container_name: tiny-rtc-frontend-prod
     expose:
       - "80"
     networks:
@@ -42,19 +37,17 @@ services:
     build:
       context: ../backend
       dockerfile: .docker/Dockerfile
-      args:
-        - NODE_ENV=production
-    container_name: tiny-rtc-backend
-    expose:
-      - "3001"
-    networks:
-      - tiny-rtc-network
+    container_name: tiny-rtc-backend-prod
     environment:
       - NODE_ENV=production
       - PORT=3001
       - CORS_ORIGIN=https://gloeend.space
       - SOCKET_ORIGIN=https://gloeend.space
       - DOMAIN=gloeend.space
+    expose:
+      - "3001"
+    networks:
+      - tiny-rtc-network
     restart: unless-stopped
 
   frontend-dev:
@@ -67,12 +60,16 @@ services:
     volumes:
       - ../frontend:/app
       - /app/node_modules
-    networks:
-      - tiny-rtc-network
+      - /app/dist
     environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
       - VITE_API_URL=http://localhost:3001/api
       - VITE_WS_URL=ws://localhost:3001
+    networks:
+      - tiny-rtc-network
     command: npm run dev -- --host
+    restart: unless-stopped
 
   backend-dev:
     build:
@@ -84,10 +81,11 @@ services:
     volumes:
       - ../backend:/app
       - /app/node_modules
-    networks:
-      - tiny-rtc-network
     environment:
       - NODE_ENV=development
       - PORT=3001
       - CORS_ORIGIN=http://localhost:5173
       - SOCKET_ORIGIN=http://localhost:5173
+    networks:
+      - tiny-rtc-network
+    restart: unless-stopped
