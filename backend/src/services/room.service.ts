@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Room, Participant } from '../types';
-import { config } from '../config/index.ts';
+import { config } from '../config';
 
 class RoomService {
   private rooms = new Map<string, Room>();

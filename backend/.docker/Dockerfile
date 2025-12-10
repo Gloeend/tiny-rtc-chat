@@ -8,19 +8,14 @@ RUN npm ci && npm cache clean --force
 
 COPY . .
 
-RUN echo '{"type": "module"}' > dist/package.json
-
 RUN npm run build
 
 FROM node:22.21.1-alpine
 
 WORKDIR /app
 
-COPY --from=builder /app/dist ./dist
-
-RUN echo '{"type": "module"}' > package.json
-
 COPY package*.json ./
+COPY --from=builder /app/dist ./dist
 
 RUN npm ci --only=production && npm cache clean --force
 

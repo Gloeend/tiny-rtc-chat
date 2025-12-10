@@ -3,7 +3,7 @@ export const config = {
 
   cors: {
     origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
-    methods: ['GET', 'POST'] as string[],
+    methods: ['GET', 'POST'],
   },
 
   room: {
