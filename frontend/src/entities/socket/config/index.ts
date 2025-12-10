@@ -239,40 +239,6 @@ export const chatSocketMiddleware: Middleware = (store) => (next) => (action) =>
 			break
 		}
 
-		case ChatSocketActionEnum.JOIN_ROOM: {
-			if (!('payload' in typedAction)) break
-			const { roomId } = typedAction.payload as { roomId: string }
-
-			if (socket && socket.connected) {
-				socket.emit('join', { roomId }, (response: unknown) => {
-					console.info(`Socket.IO: Joined room ${roomId}`, response)
-					joinedRooms.add(roomId)
-				})
-			} else {
-				console.warn('Socket.IO: Cannot join room, socket not connected')
-				joinedRooms.add(roomId)
-				if (!socket && !isConnecting) {
-					store.dispatch({ type: ChatSocketActionEnum.CONNECT })
-				}
-			}
-			break
-		}
-
-		case ChatSocketActionEnum.LEAVE_ROOM: {
-			if (!('payload' in typedAction)) break
-			const { roomId } = typedAction.payload as { roomId: string }
-
-			if (socket && socket.connected) {
-				socket.emit('leave', { roomId }, (response: unknown) => {
-					console.info(`Socket.IO: Left room ${roomId}`, response)
-					joinedRooms.delete(roomId)
-				})
-			} else {
-				joinedRooms.delete(roomId)
-			}
-			break
-		}
-
 		case ChatSocketActionEnum.DISCONNECT:
 			if (socket) {
 				isConnecting = false

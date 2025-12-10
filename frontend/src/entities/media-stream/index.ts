@@ -11,3 +11,5 @@ export {
 export { mediaStreamActions, mediaStreamReducer } from './model/slices/media-stream.slice'
 
 export { MediaDevicesService } from './model/services/media-devices.service'
+
+export { useMediaStream } from './lib/hooks/use-media-stream'

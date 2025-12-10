@@ -4,6 +4,7 @@ import type { Dispatch } from 'react'
 export class MediaStreamService {
 	private dispatch: Dispatch<unknown>
 	private tracks: Set<MediaStreamTrack> = new Set()
+	private remoteTracks: Set<MediaStreamTrack> = new Set()
 
 	constructor(dispatch: Dispatch<unknown>) {
 		this.dispatch = dispatch
@@ -51,8 +52,16 @@ export class MediaStreamService {
 		this.tracks.add(track)
 	}
 
-	public getTracks() {
+	public getTracks = () => {
 		return this.tracks
+	}
+
+	public getRemoteTrack = () => {
+		return this.remoteTracks
+	}
+
+	public addRemoteTrack(track: MediaStreamTrack): void {
+		this.remoteTracks.add(track)
 	}
 
 	public clear() {

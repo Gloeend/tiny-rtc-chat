@@ -59,12 +59,13 @@ export const setupSocketHandlers = (io: Server): void => {
     socket.on('leave-room', (data) => {
       try {
         const roomId = validateRoomId(data);
+        const userId = roomService.getUserIdBySocketId(socket.id);
         const removed = roomService.removeParticipant(roomId, socket.id);
 
-        if (removed) {
-          socket.to(roomId).emit('user-disconnected', socket.id);
+        if (removed && userId) {
+          socket.to(roomId).emit('user-disconnected', userId);
           socket.leave(roomId);
-          console.log(`User ${socket.id} left room ${roomId}`);
+          console.log(`User ${userId} left room ${roomId}`);
         }
       } catch (error) {
         if (error instanceof ValidationError) {
@@ -78,10 +79,23 @@ export const setupSocketHandlers = (io: Server): void => {
     // WebRTC offer handler
     socket.on('offer', (data) => {
       try {
-        const { target, offer } = validateOfferData(data);
-        socket.to(target).emit('offer', {
+        const { targetUserId, offer } = validateOfferData(data);
+        const targetSocketId = roomService.getSocketIdByUserId(targetUserId);
+        const senderUserId = roomService.getUserIdBySocketId(socket.id);
+
+        if (!targetSocketId) {
+          socket.emit('error', 'Target user not found');
+          return;
+        }
+
+        if (!senderUserId) {
+          socket.emit('error', 'You must join a room first');
+          return;
+        }
+
+        socket.to(targetSocketId).emit('offer', {
           offer,
-          sender: socket.id,
+          senderUserId,
         });
       } catch (error) {
         if (error instanceof ValidationError) {
@@ -95,10 +109,23 @@ export const setupSocketHandlers = (io: Server): void => {
     // WebRTC answer handler
     socket.on('answer', (data) => {
       try {
-        const { target, answer } = validateAnswerData(data);
-        socket.to(target).emit('answer', {
+        const { targetUserId, answer } = validateAnswerData(data);
+        const targetSocketId = roomService.getSocketIdByUserId(targetUserId);
+        const senderUserId = roomService.getUserIdBySocketId(socket.id);
+
+        if (!targetSocketId) {
+          socket.emit('error', 'Target user not found');
+          return;
+        }
+
+        if (!senderUserId) {
+          socket.emit('error', 'You must join a room first');
+          return;
+        }
+
+        socket.to(targetSocketId).emit('answer', {
           answer,
-          sender: socket.id,
+          senderUserId,
         });
       } catch (error) {
         if (error instanceof ValidationError) {
@@ -112,10 +139,23 @@ export const setupSocketHandlers = (io: Server): void => {
     // ICE candidate handler
     socket.on('ice-candidate', (data) => {
       try {
-        const { target, candidate } = validateIceCandidateData(data);
-        socket.to(target).emit('ice-candidate', {
+        const { targetUserId, candidate } = validateIceCandidateData(data);
+        const targetSocketId = roomService.getSocketIdByUserId(targetUserId);
+        const senderUserId = roomService.getUserIdBySocketId(socket.id);
+
+        if (!targetSocketId) {
+          socket.emit('error', 'Target user not found');
+          return;
+        }
+
+        if (!senderUserId) {
+          socket.emit('error', 'You must join a room first');
+          return;
+        }
+
+        socket.to(targetSocketId).emit('ice-candidate', {
           candidate,
-          sender: socket.id,
+          senderUserId,
         });
       } catch (error) {
         if (error instanceof ValidationError) {
@@ -128,15 +168,19 @@ export const setupSocketHandlers = (io: Server): void => {
 
     // Disconnect handler
     socket.on('disconnect', () => {
-      console.log('User disconnected:', socket.id);
+      // Get userId before removing from rooms
+      const userId = roomService.getUserIdBySocketId(socket.id);
+      console.log('User disconnected:', userId || socket.id);
 
       // Remove user from all rooms they're in
       const affectedRooms = roomService.removeParticipantFromAllRooms(socket.id);
 
       // Notify other participants in affected rooms
-      affectedRooms.forEach(roomId => {
-        socket.to(roomId).emit('user-disconnected', socket.id);
-      });
+      if (userId) {
+        affectedRooms.forEach(roomId => {
+          socket.to(roomId).emit('user-disconnected', userId);
+        });
+      }
     });
   });
 };

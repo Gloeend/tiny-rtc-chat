@@ -1,10 +1,14 @@
 import { MediaStreamService } from '@entities/media-stream/@x'
-import { rtcSessionSliceActions } from '@entities/rtc-session'
+import { isLocalCandidate, rtcSessionSliceActions } from '@entities/rtc-session'
+import { ENV_CONFIG } from '@shared/config/environment-config'
 
 export class PeerConnectionService {
 	private dispatch: (action: unknown) => void
 	private peerConnection: RTCPeerConnection | null = null
 	private mediaStreamService: MediaStreamService
+	private offer: RTCSessionDescriptionInit | null = null
+	private remoteVideoElement: HTMLVideoElement | null = null
+	private remoteStream = new MediaStream()
 
 	constructor(dispatch: (action: unknown) => void, mediaStreamService: MediaStreamService, iceServers: RTCIceServer[]) {
 		this.dispatch = dispatch
@@ -26,12 +30,23 @@ export class PeerConnectionService {
 		this.peerConnection.onicegatheringstatechange = this.onIceGatheringStateChange
 	}
 
+	public setRemoteVideoElement = (videoElement: HTMLVideoElement) => {
+		this.remoteVideoElement = videoElement
+	}
+
 	private onTrack = (ev: RTCTrackEvent) => {
-		this.mediaStreamService.addTrack(ev.track)
+		this.remoteStream.addTrack(ev.track)
+		if (this.remoteVideoElement) {
+			this.remoteVideoElement.srcObject = this.remoteStream
+			this.remoteVideoElement.play()
+		}
+
+		this.mediaStreamService.addRemoteTrack(ev.track)
 	}
 
 	private onConnectionsStateChange = () => {
 		if (!this.peerConnection) return
+		console.log('connections state changed - ', this.peerConnection.connectionState)
 		this.dispatch(rtcSessionSliceActions.setConnectionState(this.peerConnection.connectionState))
 	}
 
@@ -40,12 +55,26 @@ export class PeerConnectionService {
 			return
 		}
 
-		this.dispatch(rtcSessionSliceActions.setIceCandidate(ev.candidate))
+		if (ENV_CONFIG.VITE_APP_MODE === 'prod' && isLocalCandidate(ev.candidate)) {
+			return
+		}
+
+		const candidate = ev.candidate.toJSON()
+
+		this.dispatch(rtcSessionSliceActions.setIceCandidate(candidate))
 	}
 
 	private onIceGatheringStateChange = () => {
 		if (!this.peerConnection) return
+		console.log(this.peerConnection.iceGatheringState)
 		this.dispatch(rtcSessionSliceActions.setIceGatheringState(this.peerConnection.iceGatheringState))
+	}
+
+	public receiveRemoteIceCandidate = async (candidate: RTCIceCandidateInit) => {
+		if (!this.peerConnection) {
+			return
+		}
+		await this.peerConnection.addIceCandidate(candidate)
 	}
 
 	private onIceCandidateError = (ev: RTCPeerConnectionIceErrorEvent) => {
@@ -60,6 +89,48 @@ export class PeerConnectionService {
 		if (ev.errorCode === 701) {
 			console.warn('TURN server authentication failed')
 		}
+	}
+
+	public createOffer = async () => {
+		if (!this.peerConnection) {
+			return
+		}
+		await new Promise((resolve) => setTimeout(resolve, 1000))
+		this.mediaStreamService.getTracks().forEach((track) => {
+			if (!this.peerConnection) return
+			this.peerConnection.addTrack(track)
+		})
+		console.log(this.remoteVideoElement)
+		this.offer = await this.peerConnection.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true })
+		await this.peerConnection.setLocalDescription(this.offer)
+		return this.offer
+	}
+
+	public getOffer = () => {
+		return this.offer
+	}
+
+	public createAnswer = async (offer: RTCSessionDescriptionInit) => {
+		if (!this.peerConnection) return
+
+		await this.peerConnection.setRemoteDescription(offer)
+
+		this.mediaStreamService.getTracks().forEach((track) => {
+			this.peerConnection!.addTrack(track)
+		})
+
+		this.offer = await this.peerConnection.createAnswer()
+		await this.peerConnection.setLocalDescription(this.offer)
+
+		return this.offer
+	}
+
+	public setRemoteDescription = async (remoteDescription: RTCSessionDescriptionInit) => {
+		if (!this.peerConnection) {
+			return
+		}
+		console.log('remote desc', remoteDescription)
+		await this.peerConnection.setRemoteDescription(remoteDescription)
 	}
 
 	public close() {

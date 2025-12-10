@@ -1,8 +1,8 @@
 import { AuthorizedLayout } from '@app/layouts/authorized-layout'
 import { UnauthorizedLayout } from '@app/layouts/unauthorized-layout'
 import { AuthorizationPage } from '@pages/authorization-page'
+import { ChannelPage } from '@pages/channel-page'
 import { HomePage } from '@pages/home-page'
-import { RoomPage } from '@pages/room-page'
 import { AppRoutes, RoutePath } from '@shared/config/routes-config'
 import { createBrowserRouter, type RouteObject } from 'react-router'
 
@@ -17,7 +17,7 @@ const RouterConfig = [
 			},
 			{
 				path: RoutePath[AppRoutes.ROOM],
-				element: <RoomPage />
+				element: <ChannelPage />
 			}
 		]
 	},

@@ -125,6 +125,7 @@ export const useMediaStream = () => {
 
 	return {
 		ref: videoRef,
-		fetchAvailableDevices
+		fetchAvailableDevices,
+		mediaStreamService
 	}
 }

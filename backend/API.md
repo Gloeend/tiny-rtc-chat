@@ -76,7 +76,7 @@ interface Room {
 
 ```typescript
 interface OfferData {
-  target: string;                    // Socket ID получателя
+  targetUserId: string;              // User ID получателя
   offer: RTCSessionDescriptionInit;  // SDP offer
 }
 ```
@@ -84,7 +84,7 @@ interface OfferData {
 **Example:**
 ```json
 {
-  "target": "xyz789",
+  "targetUserId": "user_42",
   "offer": {
     "type": "offer",
     "sdp": "v=0\r\no=- 123456789 2 IN IP4 127.0.0.1\r\n..."
@@ -98,7 +98,7 @@ interface OfferData {
 
 ```typescript
 interface AnswerData {
-  target: string;                     // Socket ID получателя
+  targetUserId: string;               // User ID получателя
   answer: RTCSessionDescriptionInit;  // SDP answer
 }
 ```
@@ -106,7 +106,7 @@ interface AnswerData {
 **Example:**
 ```json
 {
-  "target": "abc123",
+  "targetUserId": "user_42",
   "answer": {
     "type": "answer",
     "sdp": "v=0\r\no=- 987654321 2 IN IP4 127.0.0.1\r\n..."
@@ -120,7 +120,7 @@ interface AnswerData {
 
 ```typescript
 interface IceCandidateData {
-  target: string;                // Socket ID получателя
+  targetUserId: string;          // User ID получателя
   candidate: RTCIceCandidateInit; // ICE candidate
 }
 ```
@@ -128,7 +128,7 @@ interface IceCandidateData {
 **Example:**
 ```json
 {
-  "target": "abc123",
+  "targetUserId": "user_42",
   "candidate": {
     "candidate": "candidate:1 1 UDP 2130706431 192.168.1.100 54321 typ host",
     "sdpMLineIndex": 0,
@@ -375,7 +375,7 @@ socket.emit('leave-room', 'c57cd5a1-bae9-4411-9675-61e561a246a1');
 **Payload:**
 ```typescript
 {
-  target: string;                    // Socket ID получателя
+  targetUserId: string;              // User ID получателя
   offer: RTCSessionDescriptionInit;  // SDP offer
 }
 ```
@@ -384,17 +384,19 @@ socket.emit('leave-room', 'c57cd5a1-bae9-4411-9675-61e561a246a1');
 ```javascript
 const offer = await peerConnection.createOffer();
 socket.emit('offer', {
-  target: 'xyz789',
+  targetUserId: 'user_42',
   offer: offer
 });
 ```
 
 **Side Effects:**
-- Получателю отправляется событие `offer` с SDP и sender ID
+- Получателю отправляется событие `offer` с SDP и senderUserId
 
 **Errors:**
-- `error: "Invalid target socket ID"` - Невалидный target
+- `error: "Invalid target user ID"` - Невалидный targetUserId
 - `error: "Invalid offer data"` - Невалидные данные offer
+- `error: "Target user not found"` - Пользователь не найден
+- `error: "You must join a room first"` - Отправитель не в комнате
 
 ---
 
@@ -405,7 +407,7 @@ socket.emit('offer', {
 **Payload:**
 ```typescript
 {
-  target: string;                     // Socket ID получателя
+  targetUserId: string;               // User ID получателя
   answer: RTCSessionDescriptionInit;  // SDP answer
 }
 ```
@@ -414,17 +416,19 @@ socket.emit('offer', {
 ```javascript
 const answer = await peerConnection.createAnswer();
 socket.emit('answer', {
-  target: 'abc123',
+  targetUserId: 'user_42',
   answer: answer
 });
 ```
 
 **Side Effects:**
-- Получателю отправляется событие `answer` с SDP и sender ID
+- Получателю отправляется событие `answer` с SDP и senderUserId
 
 **Errors:**
-- `error: "Invalid target socket ID"` - Невалидный target
+- `error: "Invalid target user ID"` - Невалидный targetUserId
 - `error: "Invalid answer data"` - Невалидные данные answer
+- `error: "Target user not found"` - Пользователь не найден
+- `error: "You must join a room first"` - Отправитель не в комнате
 
 ---
 
@@ -435,7 +439,7 @@ socket.emit('answer', {
 **Payload:**
 ```typescript
 {
-  target: string;                // Socket ID получателя
+  targetUserId: string;          // User ID получателя
   candidate: RTCIceCandidateInit; // ICE candidate
 }
 ```
@@ -445,7 +449,7 @@ socket.emit('answer', {
 peerConnection.onicecandidate = (event) => {
   if (event.candidate) {
     socket.emit('ice-candidate', {
-      target: 'abc123',
+      targetUserId: 'user_42',
       candidate: event.candidate
     });
   }
@@ -453,11 +457,13 @@ peerConnection.onicecandidate = (event) => {
 ```
 
 **Side Effects:**
-- Получателю отправляется событие `ice-candidate` с candidate и sender ID
+- Получателю отправляется событие `ice-candidate` с candidate и senderUserId
 
 **Errors:**
-- `error: "Invalid target socket ID"` - Невалидный target
+- `error: "Invalid target user ID"` - Невалидный targetUserId
 - `error: "Invalid ICE candidate data"` - Невалидные данные candidate
+- `error: "Target user not found"` - Пользователь не найден
+- `error: "You must join a room first"` - Отправитель не в комнате
 
 ---
 
@@ -488,14 +494,14 @@ socket.on('user-connected', (participant) => {
 
 **Payload:**
 ```typescript
-socketId: string;  // Socket ID отключившегося участника
+userId: string;  // User ID отключившегося участника
 ```
 
 **Example:**
 ```javascript
-socket.on('user-disconnected', (socketId) => {
-  console.log('User left:', socketId);
-  // Закрыть peer connection
+socket.on('user-disconnected', (userId) => {
+  console.log('User left:', userId);
+  // Закрыть peer connection для этого userId
 });
 ```
 
@@ -547,19 +553,19 @@ socket.on('room-closed', () => {
 ```typescript
 {
   offer: RTCSessionDescriptionInit;  // SDP offer
-  sender: string;                    // Socket ID отправителя
+  senderUserId: string;              // User ID отправителя
 }
 ```
 
 **Example:**
 ```javascript
-socket.on('offer', async ({ offer, sender }) => {
+socket.on('offer', async ({ offer, senderUserId }) => {
   await peerConnection.setRemoteDescription(offer);
   const answer = await peerConnection.createAnswer();
   await peerConnection.setLocalDescription(answer);
 
   socket.emit('answer', {
-    target: sender,
+    targetUserId: senderUserId,
     answer: answer
   });
 });
@@ -575,13 +581,13 @@ socket.on('offer', async ({ offer, sender }) => {
 ```typescript
 {
   answer: RTCSessionDescriptionInit;  // SDP answer
-  sender: string;                     // Socket ID отправителя
+  senderUserId: string;               // User ID отправителя
 }
 ```
 
 **Example:**
 ```javascript
-socket.on('answer', async ({ answer, sender }) => {
+socket.on('answer', async ({ answer, senderUserId }) => {
   await peerConnection.setRemoteDescription(answer);
 });
 ```
@@ -596,13 +602,13 @@ socket.on('answer', async ({ answer, sender }) => {
 ```typescript
 {
   candidate: RTCIceCandidateInit;  // ICE candidate
-  sender: string;                  // Socket ID отправителя
+  senderUserId: string;            // User ID отправителя
 }
 ```
 
 **Example:**
 ```javascript
-socket.on('ice-candidate', async ({ candidate, sender }) => {
+socket.on('ice-candidate', async ({ candidate, senderUserId }) => {
   await peerConnection.addIceCandidate(candidate);
 });
 ```
@@ -631,7 +637,9 @@ socket.on('error', (message) => {
 - `"Could not join room. Room might be full."` - Комната заполнена
 - `"Invalid room ID"` - Невалидный ID комнаты
 - `"Invalid user ID"` - Невалидный ID пользователя
-- `"Invalid target socket ID"` - Невалидный target для WebRTC
+- `"Invalid target user ID"` - Невалидный targetUserId для WebRTC
+- `"Target user not found"` - Целевой пользователь не найден
+- `"You must join a room first"` - Отправитель не в комнате
 - `"Invalid offer data"` - Невалидные данные offer
 - `"Invalid answer data"` - Невалидные данные answer
 - `"Invalid ICE candidate data"` - Невалидные данные candidate
@@ -681,7 +689,7 @@ class ValidationError extends Error {
 - Room ID (должен быть непустой строкой)
 - User ID (должен быть непустой строкой)
 - WebRTC offer/answer/candidate данным
-- Target socket ID для peer-to-peer сообщений
+- Target user ID для peer-to-peer сообщений
 
 ---
 
@@ -700,21 +708,21 @@ class ValidationError extends Error {
    Server → Other Clients: emit('user-connected', participant)
 
 4. For each existing user:
-   Client → Server: emit('offer', { target, offer })
-   Server → Target: emit('offer', { offer, sender })
+   Client → Server: emit('offer', { targetUserId, offer })
+   Server → Target: emit('offer', { offer, senderUserId })
 
-   Target → Server: emit('answer', { target, answer })
-   Server → Client: emit('answer', { answer, sender })
+   Target → Server: emit('answer', { targetUserId, answer })
+   Server → Client: emit('answer', { answer, senderUserId })
 
    Both peers exchange ICE candidates:
-   Client → Server: emit('ice-candidate', { target, candidate })
-   Server → Target: emit('ice-candidate', { candidate, sender })
+   Client → Server: emit('ice-candidate', { targetUserId, candidate })
+   Server → Target: emit('ice-candidate', { candidate, senderUserId })
 
 5. WebRTC connection established ✅
 
 6. On disconnect:
    Client → Server: emit('leave-room', roomId)
-   Server → Other Clients: emit('user-disconnected', socketId)
+   Server → Other Clients: emit('user-disconnected', userId)
 ```
 
 ---

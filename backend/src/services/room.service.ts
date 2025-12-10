@@ -105,6 +105,22 @@ class RoomService {
     return room.participants.filter(p => p.socketId !== excludeSocketId);
   }
 
+  getSocketIdByUserId(userId: string): string | null {
+    for (const room of this.rooms.values()) {
+      const participant = room.participants.find(p => p.userId === userId);
+      if (participant) return participant.socketId;
+    }
+    return null;
+  }
+
+  getUserIdBySocketId(socketId: string): string | null {
+    for (const room of this.rooms.values()) {
+      const participant = room.participants.find(p => p.socketId === socketId);
+      if (participant) return participant.userId;
+    }
+    return null;
+  }
+
   private startCleanup(): void {
     this.cleanupInterval = setInterval(() => {
       this.cleanupEmptyRooms();
