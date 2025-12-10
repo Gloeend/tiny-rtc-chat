@@ -1,7 +1,4 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
-import { ENV_CONFIG } from '@shared/config/environment-config'
-
-import { isLocalCandidate } from '../../lib/isLocalCandidate'
 
 type InitialState = {
 	iceCandidates: Record<string, true>
@@ -19,11 +16,7 @@ const rtcSessionSlice = createSlice({
 	name: 'rtc-session',
 	initialState: INITIAL_STATE,
 	reducers: {
-		setIceCandidate: (state, { payload }: PayloadAction<RTCIceCandidate>) => {
-			if (ENV_CONFIG.VITE_APP_MODE === 'prod' && isLocalCandidate(payload)) {
-				return
-			}
-
+		setIceCandidate: (state, { payload }: PayloadAction<RTCIceCandidateInit>) => {
 			const jsonCandidate = JSON.stringify(payload)
 
 			if (!state.iceCandidates[jsonCandidate]) {

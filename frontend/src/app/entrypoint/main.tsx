@@ -1,5 +1,3 @@
-import { ENV_CONFIG } from '@shared/config/environment-config'
-import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import { App } from './app.tsx'
@@ -12,12 +10,4 @@ if (!rootContainer) {
 
 const root = createRoot(rootContainer)
 
-root.render(
-	ENV_CONFIG.VITE_APP_MODE === 'dev' ? (
-		<StrictMode>
-			<App />
-		</StrictMode>
-	) : (
-		<App />
-	)
-)
+root.render(<App />)

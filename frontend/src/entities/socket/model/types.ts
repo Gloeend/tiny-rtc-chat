@@ -3,9 +3,7 @@ export const ChatSocketActionEnum = {
 	DISCONNECT: 'socket/DISCONNECT',
 	SUBSCRIBE: 'socket/SUBSCRIBE',
 	UNSUBSCRIBE: 'socket/UNSUBSCRIBE',
-	SEND: 'socket/SEND',
-	JOIN_ROOM: 'socket/JOIN_ROOM',
-	LEAVE_ROOM: 'socket/LEAVE_ROOM'
+	SEND: 'socket/SEND'
 }
 
 export interface SocketMessage<T = unknown> {
@@ -53,16 +51,6 @@ export const socketActions = {
 		({
 			type: ChatSocketActionEnum.SEND,
 			payload: { event, payload, ack }
-		}) as const,
-	joinRoom: (roomId: string) =>
-		({
-			type: ChatSocketActionEnum.JOIN_ROOM,
-			payload: { roomId }
-		}) as const,
-	leaveRoom: (roomId: string) =>
-		({
-			type: ChatSocketActionEnum.LEAVE_ROOM,
-			payload: { roomId }
 		}) as const
 }
 
@@ -72,5 +60,3 @@ export type ChatSocketActions =
 	| ReturnType<typeof socketActions.subscribe>
 	| ReturnType<typeof socketActions.unsubscribe>
 	| ReturnType<typeof socketActions.send>
-	| ReturnType<typeof socketActions.joinRoom>
-	| ReturnType<typeof socketActions.leaveRoom>

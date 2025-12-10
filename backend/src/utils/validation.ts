@@ -39,17 +39,17 @@ export const validateOfferData = (data: unknown): OfferData => {
     throw new ValidationError('Invalid offer data');
   }
 
-  const { target, offer } = data as Partial<OfferData>;
+  const { targetUserId, offer } = data as Partial<OfferData>;
 
-  if (!target || typeof target !== 'string') {
-    throw new ValidationError('Invalid target socket ID');
+  if (!targetUserId || typeof targetUserId !== 'string') {
+    throw new ValidationError('Invalid target user ID');
   }
 
   if (!offer || typeof offer !== 'object') {
     throw new ValidationError('Invalid offer data');
   }
 
-  return { target, offer };
+  return { targetUserId, offer };
 };
 
 export const validateAnswerData = (data: unknown): AnswerData => {
@@ -57,17 +57,17 @@ export const validateAnswerData = (data: unknown): AnswerData => {
     throw new ValidationError('Invalid answer data');
   }
 
-  const { target, answer } = data as Partial<AnswerData>;
+  const { targetUserId, answer } = data as Partial<AnswerData>;
 
-  if (!target || typeof target !== 'string') {
-    throw new ValidationError('Invalid target socket ID');
+  if (!targetUserId || typeof targetUserId !== 'string') {
+    throw new ValidationError('Invalid target user ID');
   }
 
   if (!answer || typeof answer !== 'object') {
     throw new ValidationError('Invalid answer data');
   }
 
-  return { target, answer };
+  return { targetUserId, answer };
 };
 
 export const validateIceCandidateData = (data: unknown): IceCandidateData => {
@@ -75,15 +75,15 @@ export const validateIceCandidateData = (data: unknown): IceCandidateData => {
     throw new ValidationError('Invalid ICE candidate data');
   }
 
-  const { target, candidate } = data as Partial<IceCandidateData>;
+  const { targetUserId, candidate } = data as Partial<IceCandidateData>;
 
-  if (!target || typeof target !== 'string') {
-    throw new ValidationError('Invalid target socket ID');
+  if (!targetUserId || typeof targetUserId !== 'string') {
+    throw new ValidationError('Invalid target user ID');
   }
 
   if (!candidate || typeof candidate !== 'object') {
     throw new ValidationError('Invalid ICE candidate data');
   }
 
-  return { target, candidate };
+  return { targetUserId, candidate };
 };
