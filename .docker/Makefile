@@ -24,31 +24,31 @@ help:
 
 prod:
 	@echo "${GREEN}Starting production environment...${RESET}"
-	docker-compose up -d nginx-proxy frontend-prod backend-prod
+	docker compose up -d nginx-proxy frontend-prod backend-prod
 	@echo "${GREEN}Production environment started!${RESET}"
-	@echo "Frontend: http://localhost:80"
-	@echo "Backend API: http://localhost:80/api/health"
+	@echo "Frontend: https://localhost"
+	@echo "Backend API: https://localhost/api/health"
 
 dev:
 	@echo "${GREEN}Starting development environment...${RESET}"
-	docker-compose up frontend-dev backend-dev
+	docker compose up frontend-dev backend-dev
 
 down:
 	@echo "${YELLOW}Stopping all services...${RESET}"
-	docker-compose down
+	docker compose down
 
 logs:
-	docker-compose logs -f
+	docker compose logs -f
 
 clean:
 	@echo "${YELLOW}Cleaning up...${RESET}"
-	docker-compose down -v
+	docker compose down -v
 	docker system prune -f
 	@echo "${GREEN}Cleanup completed!${RESET}"
 
 build-all:
 	@echo "${GREEN}Building all containers...${RESET}"
-	docker-compose build
+	docker compose build
 
 ssl-setup:
 	@echo "${GREEN}Generating self-signed SSL certificates...${RESET}"
@@ -62,11 +62,15 @@ ssl-setup:
 deploy:
 	@echo "${GREEN}Deploying Tiny RTC Chat...${RESET}"
 	@echo "${YELLOW}1. Stopping existing containers...${RESET}"
-	docker-compose down
+	docker compose down
 	@echo "${YELLOW}2. Building new containers...${RESET}"
-	docker-compose build
+	docker compose build
 	@echo "${YELLOW}3. Starting production environment...${RESET}"
-	docker-compose up -d
+	docker compose up -d
 	@echo "${GREEN}Deployment complete!${RESET}"
-	@echo "Frontend: http://localhost:80"
-	@echo "Backend API: http://localhost:80/api/health"
+	@echo "Frontend: https://localhost"
+	@echo "Backend API: https://localhost/api/health"
+
+status:
+	@echo "${GREEN}Container status:${RESET}"
+	docker compose ps
