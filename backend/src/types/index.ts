@@ -18,17 +18,17 @@ export interface Room {
 // WebRTC signaling types
 export interface OfferData {
   targetUserId: string;
-  offer: RTCSessionDescriptionInit;
+  offer: any;
 }
 
 export interface AnswerData {
   targetUserId: string;
-  answer: RTCSessionDescriptionInit;
+  answer: any;
 }
 
 export interface IceCandidateData {
   targetUserId: string;
-  candidate: RTCIceCandidateInit;
+  candidate: any;
 }
 
 // Socket events
@@ -44,9 +44,9 @@ export interface ServerToClientEvents {
   'existing-users': (participants: Participant[]) => void;
   'room-closed': () => void;
   'error': (message: string) => void;
-  'offer': (data: { offer: RTCSessionDescriptionInit; senderUserId: string }) => void;
-  'answer': (data: { answer: RTCSessionDescriptionInit; senderUserId: string }) => void;
-  'ice-candidate': (data: { candidate: RTCIceCandidateInit; senderUserId: string }) => void;
+  'offer': (data: { offer: any; senderUserId: string }) => void;
+  'answer': (data: { answer: any; senderUserId: string }) => void;
+  'ice-candidate': (data: { candidate: any; senderUserId: string }) => void;
 }
 
 export interface ClientToServerEvents {

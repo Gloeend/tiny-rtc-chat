@@ -6,7 +6,13 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
-    "dev": "tsx watch src/server.ts"
+    "dev": "tsx watch src/server.ts",
+    "docker:prod": "cd ../.docker && make prod",
+    "docker:dev": "cd ../.docker && make dev",
+    "docker:down": "cd ../.docker && make down",
+    "docker:logs": "cd ../.docker && make logs",
+    "docker:clean": "cd ../.docker && make clean",
+    "docker:build": "cd ../.docker && make build-all"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
