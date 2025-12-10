@@ -8,7 +8,12 @@
 		"build": "tsc --noEmit && vite build",
 		"lint": "eslint .",
 		"lint:fix": "eslint . --fix",
-		"preview": "vite preview"
+		"preview": "vite preview",
+		"docker:dev": "docker-compose -f .docker/docker-compose.yml up frontend-dev",
+		"docker:prod": "docker-compose -f .docker/docker-compose.yml up frontend-prod",
+		"docker:build:dev": "docker-compose -f .docker/docker-compose.yml build frontend-dev",
+		"docker:build:prod": "docker-compose -f .docker/docker-compose.yml build frontend-prod",
+		"docker:down": "docker-compose -f .docker/docker-compose.yml down"
 	},
 	"dependencies": {
 		"@hookform/resolvers": "5.2.1",
