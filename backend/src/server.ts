@@ -2,7 +2,7 @@ import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
-import { config } from './config';
+import { config } from './config/index.ts';
 import { createRoomRouter } from './handlers/room.handler';
 import { setupSocketHandlers } from './handlers/socket.handler';
 import { ServerToClientEvents, ClientToServerEvents } from './types';

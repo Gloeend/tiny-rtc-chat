@@ -52,10 +52,10 @@ build-all:
 
 ssl-setup:
 	@echo "${GREEN}Generating self-signed SSL certificates...${RESET}"
-	mkdir -p ssl
+	mkdir -p ../ssl  # <-- Изменено
 	openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-		-keyout ssl/gloeend.space.key \
-		-out ssl/gloeend.space.crt \
+		-keyout ../ssl/gloeend.space.key \  # <-- Изменено
+		-out ../ssl/gloeend.space.crt \    # <-- Изменено
 		-subj "/C=RU/ST=Moscow/L=Moscow/O=TinyRTC/CN=gloeend.space"
 	@echo "${GREEN}SSL certificates generated in ssl/ directory${RESET}"
 
