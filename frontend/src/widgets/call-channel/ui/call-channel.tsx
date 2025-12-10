@@ -9,7 +9,7 @@ export const CallChannel = ({ className }: { className?: string }) => {
 
 	return (
 		<section className={cn(className, 'grid grid-cols-3 gap-4')}>
-			<video className='bottom-4 right-4 h-[300px] rounded-xl bg-black object-contain' ref={ref} autoPlay muted />
+			<video className='bottom-4 right-4 h-[300px] w-full rounded-xl bg-black/50 object-contain' ref={ref} autoPlay muted />
 			<video className='block h-[300px] w-full rounded-xl bg-black/50 object-contain' ref={remoteRef} autoPlay />
 		</section>
 	)
