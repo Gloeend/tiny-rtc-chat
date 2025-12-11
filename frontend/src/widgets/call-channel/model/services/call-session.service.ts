@@ -29,8 +29,8 @@ export class CallSessionService {
 		)
 	}
 
-	public leaveChannel() {
-		this.dispatch(socketActions.send('leave-room', null))
+	public leaveChannel(channelId: string) {
+		this.dispatch(socketActions.send('leave-room', channelId))
 	}
 
 	public sendCandidate(candidate: RTCIceCandidate, userId: string) {

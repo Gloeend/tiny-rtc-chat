@@ -49,7 +49,7 @@ export const useCall = (channelId: string) => {
 				return
 			}
 
-			callSessionService.current.leaveChannel()
+			callSessionService.current.leaveChannel(channelId)
 		}
 	}, [channelId, userId])
 
