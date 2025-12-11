@@ -20,6 +20,7 @@ export class CallSessionService {
 		this.dispatch(socketActions.subscribe('ice-candidate'))
 		this.dispatch(socketActions.subscribe('answer'))
 		this.dispatch(socketActions.subscribe('user-connected'))
+		this.dispatch(socketActions.subscribe('user-disconnected'))
 		this.dispatch(socketActions.subscribe('existing-users'))
 		this.dispatch(
 			socketActions.send('join-room', {

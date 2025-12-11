@@ -4,20 +4,26 @@ import { getSocketLastMessage } from '@entities/socket'
 import { getUser } from '@entities/user'
 import { ENV_CONFIG } from '@shared/config/environment-config'
 import { useAppDispatch, useAppSelector } from '@shared/lib'
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { shallowEqual } from 'react-redux'
 import { z } from 'zod'
 
 import { CallSessionService } from '../../model/services/call-session.service'
 
+import { useGenericVideoRender } from './use-generic-video-render'
+
 export const useCall = (channelId: string) => {
 	const dispatch = useAppDispatch()
-	const remoteRef = useRef<HTMLVideoElement | null>(null)
+
+	const { ref: containerRef, onAddVideo, onRemoveVideo } = useGenericVideoRender()
+	const { ref, mediaStreamService } = useMediaStream()
+
 	const remoteIdRef = useRef<string | null>(null)
+
 	const { userId } = useAppSelector(getUser)
 	const iceCandidates = useAppSelector(getRtcSessionIceCandidates, shallowEqual)
 	const lastMessage = useAppSelector(getSocketLastMessage, shallowEqual)
-	const { ref, mediaStreamService } = useMediaStream()
+
 	const callSessionService = useRef<CallSessionService | null>(null)
 	const peerConnectionService = useRef<PeerConnectionService | null>(null)
 
@@ -36,6 +42,47 @@ export const useCall = (channelId: string) => {
 			userId
 		)
 	}
+
+	const onTrack = useCallback(
+		(userId: string, tracks: MediaStreamTrack[]) => {
+			if (!remoteIdRef.current || !containerRef.current) return
+
+			const mediaStream = new MediaStream()
+
+			tracks.forEach((track) => {
+				mediaStream.addTrack(track)
+			})
+
+			const foundedVideoElement = containerRef.current.querySelector<HTMLVideoElement>(`video[data-user-id="${userId}"]`)
+
+			if (foundedVideoElement) {
+				foundedVideoElement.srcObject = mediaStream
+				foundedVideoElement.setAttribute('data-user-id', userId)
+				foundedVideoElement.play().catch(console.error)
+				// foundedVideoElement.load()
+				return
+			}
+
+			const videoElement = onAddVideo()
+
+			if (!videoElement) {
+				return
+			}
+
+			videoElement.srcObject = mediaStream
+			videoElement.setAttribute('data-user-id', userId)
+			videoElement.play().catch(console.error)
+		},
+		[containerRef, onAddVideo]
+	)
+
+	useEffect(() => {
+		if (!mediaStreamService.current) {
+			return
+		}
+
+		mediaStreamService.current.setOnTrackRemoteExternal(onTrack)
+	}, [mediaStreamService, onTrack])
 
 	useEffect(() => {
 		if (!callSessionService.current) {
@@ -65,7 +112,13 @@ export const useCall = (channelId: string) => {
 	}, [iceCandidates])
 
 	useEffect(() => {
-		if (!callSessionService.current || !lastMessage || !lastMessage.topic || !lastMessage.topic) {
+		if (
+			!callSessionService.current ||
+			!peerConnectionService.current ||
+			!lastMessage ||
+			!lastMessage.topic ||
+			!lastMessage.topic
+		) {
 			return
 		}
 
@@ -90,11 +143,34 @@ export const useCall = (channelId: string) => {
 
 				remoteIdRef.current = parsed.data.userId
 
-				if (peerConnectionService.current && remoteRef.current) {
-					peerConnectionService.current.setRemoteVideoElement(remoteRef.current)
-				}
-
+				peerConnectionService.current.setRemoteId(parsed.data.userId)
 				callSessionService.current.sendOffer(parsed.data.userId).catch(console.error)
+				break
+			}
+			case 'user-disconnected': {
+				const parsed = z
+					.object({
+						topic: z.literal('user-disconnected'),
+						data: z.string(),
+						timestamp: z.number()
+					})
+					.parse(lastMessage)
+
+				onRemoveVideo(`video[data-user-id="${parsed.data}"]`)
+
+				peerConnectionService.current = new PeerConnectionService(
+					dispatch,
+					mediaStreamService.current as MediaStreamService,
+					JSON.parse(ENV_CONFIG.VITE_APP_ICE_SERVERS)
+				)
+
+				callSessionService.current = new CallSessionService(
+					dispatch,
+					peerConnectionService.current as PeerConnectionService,
+					channelId,
+					userId
+				)
+
 				break
 			}
 			case 'offer': {
@@ -112,9 +188,7 @@ export const useCall = (channelId: string) => {
 					.parse(lastMessage)
 				remoteIdRef.current = parsed.data.senderUserId
 
-				if (peerConnectionService.current && remoteRef.current) {
-					peerConnectionService.current.setRemoteVideoElement(remoteRef.current)
-				}
+				peerConnectionService.current.setRemoteId(parsed.data.senderUserId)
 				callSessionService.current.sendAnswer(parsed.data.senderUserId, parsed.data.offer).catch(console.error)
 				break
 			}
@@ -135,6 +209,7 @@ export const useCall = (channelId: string) => {
 
 				remoteIdRef.current = parsed.data.senderUserId
 
+				peerConnectionService.current.setRemoteId(parsed.data.senderUserId)
 				callSessionService.current.setRemoteDescription(parsed.data.answer).catch(console.error)
 				break
 			}
@@ -158,6 +233,6 @@ export const useCall = (channelId: string) => {
 
 	return {
 		ref,
-		remoteRef
+		containerRef
 	}
 }

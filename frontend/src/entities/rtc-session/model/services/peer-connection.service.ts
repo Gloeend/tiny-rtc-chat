@@ -7,8 +7,7 @@ export class PeerConnectionService {
 	private peerConnection: RTCPeerConnection | null = null
 	private mediaStreamService: MediaStreamService
 	private offer: RTCSessionDescriptionInit | null = null
-	private remoteVideoElement: HTMLVideoElement | null = null
-	private remoteStream = new MediaStream()
+	private remoteId: string | null = null
 
 	constructor(dispatch: (action: unknown) => void, mediaStreamService: MediaStreamService, iceServers: RTCIceServer[]) {
 		this.dispatch = dispatch
@@ -30,18 +29,15 @@ export class PeerConnectionService {
 		this.peerConnection.onicegatheringstatechange = this.onIceGatheringStateChange
 	}
 
-	public setRemoteVideoElement = (videoElement: HTMLVideoElement) => {
-		this.remoteVideoElement = videoElement
+	public setRemoteId(remoteId: string): void {
+		this.remoteId = remoteId
 	}
 
 	private onTrack = (ev: RTCTrackEvent) => {
-		this.remoteStream.addTrack(ev.track)
-		if (this.remoteVideoElement) {
-			this.remoteVideoElement.srcObject = this.remoteStream
-			this.remoteVideoElement.play()
+		if (!this.remoteId) {
+			return
 		}
-
-		this.mediaStreamService.addRemoteTrack(ev.track)
+		this.mediaStreamService.addRemoteTrack(ev.track, this.remoteId)
 	}
 
 	private onConnectionsStateChange = () => {
@@ -100,7 +96,6 @@ export class PeerConnectionService {
 			if (!this.peerConnection) return
 			this.peerConnection.addTrack(track)
 		})
-		console.log(this.remoteVideoElement)
 		this.offer = await this.peerConnection.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true })
 		await this.peerConnection.setLocalDescription(this.offer)
 		return this.offer
