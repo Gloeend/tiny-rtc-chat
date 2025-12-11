@@ -15,7 +15,7 @@ export const ChannelPage = () => {
 	}
 
 	return (
-		<main className='wrap grid h-dvh grid-rows-[fit-content(100%)_1fr] gap-y-8 px-4 py-16'>
+		<main className='wrap grid min-h-dvh grid-rows-[fit-content(100%)_1fr] gap-y-8 px-4 pt-16'>
 			<section className='flex justify-between'>
 				<h1 className='text-2xl font-bold tracking-[-2%]'>Комната №{id}</h1>
 				<button onClick={leave}>Выйти</button>

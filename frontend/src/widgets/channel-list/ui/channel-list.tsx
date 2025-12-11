@@ -2,6 +2,7 @@ import { ChannelCard, channelRtkApi } from '@entities/channel'
 import { CreateChannel } from '@features/create-channel'
 import { AppRoutes, RoutePath } from '@shared/config/routes-config'
 import { cn } from '@shared/lib'
+import { useCopyClipboardByAttribute } from '@shared/lib/hooks/use-copy-clipboard-by-attribute'
 import { Plus } from 'lucide-react'
 import { memo, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router'
@@ -10,6 +11,7 @@ import { ChannelListLoader } from './channel-list.loader'
 
 export const ChannelList = memo(({ className }: { className?: string }) => {
 	const { data: channels = { rooms: [] }, isLoading } = channelRtkApi.useGetRoomsQuery()
+	const onCopyClipboard = useCopyClipboardByAttribute<HTMLButtonElement>('data-id')
 	const navigate = useNavigate()
 
 	const handleChannelClick = useCallback(
@@ -26,6 +28,7 @@ export const ChannelList = memo(({ className }: { className?: string }) => {
 				<li key={channelId}>
 					<ChannelCard
 						id={channelId}
+						onClickClipboard={onCopyClipboard}
 						onClick={() => {
 							handleChannelClick(channelId)
 						}}
@@ -40,7 +43,12 @@ export const ChannelList = memo(({ className }: { className?: string }) => {
 	}
 
 	return (
-		<ul className={cn(className, 'grid auto-rows-[minmax(300px,auto)] grid-cols-4 gap-5')}>
+		<ul
+			className={cn(
+				className,
+				'grid auto-rows-[minmax(300px,auto)] grid-cols-4 gap-5 max-1312px-768px:grid-cols-3 max-768px-576px:grid-cols-2 max-576px:grid-cols-1'
+			)}
+		>
 			<CreateChannel>
 				<button
 					type='button'

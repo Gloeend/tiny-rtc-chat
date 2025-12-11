@@ -2,7 +2,7 @@ import { ChannelList } from '@widgets/channel-list'
 
 export const HomePage = () => {
 	return (
-		<main className='wrap py-16'>
+		<main className='wrap max-1312px:px-4 py-16'>
 			<section>
 				<div className='flex items-center gap-x-6'>
 					<h1 className='text-5xl font-bold tracking-[-2%]'>Чаты</h1>
