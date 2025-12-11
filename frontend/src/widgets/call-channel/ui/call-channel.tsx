@@ -1,3 +1,4 @@
+import { MediaPanel } from '@features/media-panel'
 import { cn } from '@shared/lib'
 import { useParams } from 'react-router'
 
@@ -8,9 +9,10 @@ export const CallChannel = ({ className }: { className?: string }) => {
 	const { ref, remoteRef } = useCall(id)
 
 	return (
-		<section className={cn(className, 'grid grid-cols-3 gap-4')}>
+		<section className={cn(className, 'grid grid-cols-3 gap-4 pb-24 max-768px-576px:grid-cols-2 max-576px:grid-cols-1')}>
 			<video className='bottom-4 right-4 h-[300px] w-full rounded-xl bg-black/50 object-contain' ref={ref} autoPlay muted />
 			<video className='block h-[300px] w-full rounded-xl bg-black/50 object-contain' ref={remoteRef} autoPlay />
+			<MediaPanel className='fixed bottom-4 left-0 right-0 mx-auto w-fit' />
 		</section>
 	)
 }
