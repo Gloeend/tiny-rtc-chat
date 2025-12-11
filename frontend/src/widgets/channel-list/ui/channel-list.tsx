@@ -35,7 +35,7 @@ export const ChannelList = memo(({ className }: { className?: string }) => {
 					/>
 				</li>
 			)),
-		[channels, handleChannelClick]
+		[channels.rooms, handleChannelClick, onCopyClipboard]
 	)
 
 	if (isLoading) {
