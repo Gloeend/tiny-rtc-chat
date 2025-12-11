@@ -23,6 +23,7 @@ export const ChannelCard = ({
 				<div className='mt-auto flex flex-col gap-y-2 tracking-default'>
 					<p className='text-sm font-normal text-tiny-900/40'>UUID</p>
 					<button
+						data-id={id}
 						type='button'
 						className='group/clipboard relative w-fit p-0 text-xs font-light text-tiny-900 active:opacity-50'
 						onClick={onClickClipboard}
