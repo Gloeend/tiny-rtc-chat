@@ -4,10 +4,16 @@ import type { Dispatch } from 'react'
 export class MediaStreamService {
 	private dispatch: Dispatch<unknown>
 	private tracks: Set<MediaStreamTrack> = new Set()
-	private remoteTracks: Set<MediaStreamTrack> = new Set()
+	private remoteTracks: Map<string, MediaStreamTrack[]> = new Map()
+	private onTrackRemoteExternal?: (userId: string, tracks: MediaStreamTrack[]) => void
 
-	constructor(dispatch: Dispatch<unknown>) {
+	constructor(dispatch: Dispatch<unknown>, onTrackRemoteExternal?: (userId: string, tracks: MediaStreamTrack[]) => void) {
 		this.dispatch = dispatch
+		this.onTrackRemoteExternal = onTrackRemoteExternal
+	}
+
+	public setOnTrackRemoteExternal(onTrackRemoteExternal: (userId: string, tracks: MediaStreamTrack[]) => void) {
+		this.onTrackRemoteExternal = onTrackRemoteExternal
 	}
 
 	public requestMedia = async ({ video, audio }: { video: string | false; audio: string | false }) => {
@@ -56,12 +62,25 @@ export class MediaStreamService {
 		return this.tracks
 	}
 
-	public getRemoteTrack = () => {
-		return this.remoteTracks
+	public getRemoteTracks = (remoteId: string) => {
+		return this.remoteTracks.get(remoteId)
 	}
 
-	public addRemoteTrack(track: MediaStreamTrack): void {
-		this.remoteTracks.add(track)
+	public addRemoteTrack(track: MediaStreamTrack, userId: string): void {
+		const previousTracks = this.remoteTracks.get(userId)
+
+		// TODO: Возможный баг.
+		if (!previousTracks) {
+			this.remoteTracks.set(userId, [track])
+		} else {
+			this.remoteTracks.set(userId, [...previousTracks, track])
+		}
+
+		console.log('qwe1')
+		if (this.onTrackRemoteExternal) {
+			console.log('qwe')
+			this.onTrackRemoteExternal(userId, this.remoteTracks.get(userId) ?? [])
+		}
 	}
 
 	public clear() {
