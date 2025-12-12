@@ -1,13 +1,27 @@
-.PHONY: prod dev down logs clean build-all ssl-setup deploy help
+.PHONY: prod dev down logs clean build-all deploy quick-deploy restart help
 
-GREEN  := $(shell tput -Txterm setaf 2)
-YELLOW := $(shell tput -Txterm setaf 3)
-RESET  := $(shell tput -Txterm sgr0)
+GREEN  := $(shell tput -Txterm setaf 2 2>/dev/null || echo "")
+YELLOW := $(shell tput -Txterm setaf 3 2>/dev/null || echo "")
+RESET  := $(shell tput -Txterm sgr0 2>/dev/null || echo "")
 
 help:
 	@echo '${GREEN}Tiny RTC Chat - Docker Management${RESET}'
 	@echo 'Usage: make <target>'
-	@echo 'Targets: prod, dev, down, logs, clean, build-all, ssl-setup, deploy'
+	@echo ''
+	@echo 'Production:'
+	@echo '  prod         - Start production environment'
+	@echo '  deploy       - Pull, rebuild and restart (full deploy)'
+	@echo '  quick-deploy - Pull and restart (no rebuild)'
+	@echo '  restart      - Restart production containers'
+	@echo ''
+	@echo 'Development:'
+	@echo '  dev          - Start development environment'
+	@echo ''
+	@echo 'Utility:'
+	@echo '  down         - Stop all services'
+	@echo '  logs         - Follow container logs'
+	@echo '  clean        - Stop and remove volumes'
+	@echo '  build-all    - Build all containers'
 
 prod:
 	@echo "${GREEN}Starting production environment...${RESET}"
@@ -33,13 +47,29 @@ clean:
 
 build-all:
 	@echo "${GREEN}Building all containers...${RESET}"
-	docker compose build
+	docker compose build --no-cache
 
-ssl-setup:
-	@echo "${GREEN}Generating self-signed SSL...${RESET}"
-	mkdir -p ../ssl
-	openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-		-keyout ../ssl/gloeend.space.key \
-		-out ../ssl/gloeend.space.crt \
-		-subj "/C=RU/ST=Moscow/L=Moscow/O=TinyRTC/CN=gloeend.space"
-	@echo "${GREEN}SSL ready in ssl/ directory${RESET}"
+deploy:
+	@echo "${GREEN}=== Full Deploy ===${RESET}"
+	@echo "${YELLOW}Pulling latest changes...${RESET}"
+	cd .. && git pull
+	@echo "${YELLOW}Building containers...${RESET}"
+	$(MAKE) build-all
+	@echo "${YELLOW}Restarting services...${RESET}"
+	$(MAKE) down
+	$(MAKE) prod
+	@echo "${GREEN}=== Deploy complete! ===${RESET}"
+
+quick-deploy:
+	@echo "${GREEN}=== Quick Deploy ===${RESET}"
+	@echo "${YELLOW}Pulling latest changes...${RESET}"
+	cd .. && git pull
+	@echo "${YELLOW}Restarting services...${RESET}"
+	$(MAKE) down
+	$(MAKE) prod
+	@echo "${GREEN}=== Quick deploy complete! ===${RESET}"
+
+restart:
+	@echo "${YELLOW}Restarting production...${RESET}"
+	docker compose restart nginx-proxy frontend-prod backend-prod
+	@echo "${GREEN}Restarted!${RESET}"

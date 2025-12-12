@@ -1,6 +1,6 @@
 import { Server } from 'socket.io';
-import { TypedSocket } from '../types';
-import { roomService } from '../services/room.service';
+import { TypedSocket } from '../types/index.js';
+import { roomService } from '../services/room.service.js';
 import {
   validateJoinRoomData,
   validateRoomId,
@@ -8,7 +8,7 @@ import {
   validateAnswerData,
   validateIceCandidateData,
   ValidationError,
-} from '../utils/validation';
+} from '../utils/validation.js';
 
 export const setupSocketHandlers = (io: Server): void => {
   io.on('connection', (socket: TypedSocket) => {

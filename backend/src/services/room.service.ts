@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Room, Participant } from '../types';
-import { config } from '../config';
+import { Room, Participant } from '../types/index.js';
+import { config } from '../config/index.js';
 
 class RoomService {
   private rooms = new Map<string, Room>();
