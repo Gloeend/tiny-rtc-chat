@@ -2,10 +2,10 @@ import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
-import { config } from './config';
-import { createRoomRouter } from './handlers/room.handler';
-import { setupSocketHandlers } from './handlers/socket.handler';
-import { ServerToClientEvents, ClientToServerEvents } from './types';
+import { config } from './config/index.js';
+import { createRoomRouter } from './handlers/room.handler.js';
+import { setupSocketHandlers } from './handlers/socket.handler.js';
+import { ServerToClientEvents, ClientToServerEvents } from './types/index.js';
 
 // Initialize Express app
 const app = express();

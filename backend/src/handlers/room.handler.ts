@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { Server } from 'socket.io';
-import { roomService } from '../services/room.service';
-import { validateRoomId } from '../utils/validation';
+import { roomService } from '../services/room.service.js';
+import { validateRoomId } from '../utils/validation.js';
 
 export const createRoomRouter = (io: Server): Router => {
   const router = Router();

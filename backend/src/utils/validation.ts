@@ -1,4 +1,4 @@
-import { JoinRoomData, OfferData, AnswerData, IceCandidateData } from '../types';
+import { JoinRoomData, OfferData, AnswerData, IceCandidateData } from '../types/index.js';
 
 export class ValidationError extends Error {
   constructor(message: string) {
