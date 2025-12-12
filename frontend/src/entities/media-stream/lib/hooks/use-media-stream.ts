@@ -1,6 +1,6 @@
 import { mediaStreamActions } from '@entities/media-stream'
 import { useAppDispatch, useAppSelector } from '@shared/lib'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { getMediaStreamPermissions } from '../../model/selectors/media-stream.selectors'
 import { MediaDevicesService } from '../../model/services/media-devices.service'
@@ -11,6 +11,7 @@ export const useMediaStream = () => {
 	const streamRef = useRef<MediaStream | null>(null)
 	const dispatch = useAppDispatch()
 	const permissions = useAppSelector(getMediaStreamPermissions)
+	const [isLoadedMedia, setIsLoadedMedia] = useState<boolean>(false)
 
 	const mediaStreamService = useRef<MediaStreamService | null>(null)
 	if (!mediaStreamService.current) {
@@ -93,6 +94,10 @@ export const useMediaStream = () => {
 
 		const stream = await mediaStreamService.current.requestMedia(constraints)
 		streamRef.current = stream ?? null
+		if (stream && stream.getTracks().length > 0) {
+			console.log('is-loaded-media')
+			setIsLoadedMedia(true)
+		}
 		return stream
 	}, [dispatch, permissions])
 
@@ -126,6 +131,7 @@ export const useMediaStream = () => {
 	return {
 		ref: videoRef,
 		fetchAvailableDevices,
-		mediaStreamService
+		mediaStreamService,
+		isLoadedMedia
 	}
 }
