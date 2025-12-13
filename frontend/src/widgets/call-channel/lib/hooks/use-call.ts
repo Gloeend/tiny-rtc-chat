@@ -1,12 +1,18 @@
-import { MediaStreamService, useMediaStream } from '@entities/media-stream'
-import { getRtcSessionIceCandidates, PeerConnectionService } from '@entities/rtc-session'
+import { useMediaStream } from '@entities/media-stream'
+import { PeerConnectionService } from '@entities/rtc-session'
 import { getSocketLastMessage } from '@entities/socket'
 import { getUser } from '@entities/user'
 import { ENV_CONFIG } from '@shared/config/environment-config'
 import { useAppDispatch, useAppSelector } from '@shared/lib'
+import {
+	answerSchema,
+	existingUsersSchema,
+	iceCandidateSchema,
+	offerSchema,
+	userConnectedSchema,
+	userDisconnectedSchema
+} from '@widgets/call-channel/model/schemas/call-events.schema.ts'
 import { useCallback, useEffect, useRef } from 'react'
-import { shallowEqual } from 'react-redux'
-import { z } from 'zod'
 
 import { CallSessionService } from '../../model/services/call-session.service'
 
@@ -16,36 +22,74 @@ export const useCall = (channelId: string) => {
 	const dispatch = useAppDispatch()
 
 	const { ref: containerRef, onAddVideo, onRemoveVideo } = useGenericVideoRender()
-	const { ref, mediaStreamService } = useMediaStream()
+	const { ref, mediaStreamService, isLoadedMedia } = useMediaStream()
 
-	const remoteIdRef = useRef<string | null>(null)
+	const peerConnectionsRef = useRef<Map<string, PeerConnectionService>>(new Map())
+
+	const remoteUsersRef = useRef<Map<string, { nickname: string; joinedAt: string; socketId: string; userId: string }>>(
+		new Map()
+	)
+
+	const pendingIceCandidatesRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map())
+
+	const pendingUsersToConnectRef = useRef<{ socketId: string; userId: string; nickname: string; joinedAt: string }[]>([])
 
 	const { userId } = useAppSelector(getUser)
-	const iceCandidates = useAppSelector(getRtcSessionIceCandidates, shallowEqual)
-	const lastMessage = useAppSelector(getSocketLastMessage, shallowEqual)
+	const lastMessage = useAppSelector(getSocketLastMessage)
 
 	const callSessionService = useRef<CallSessionService | null>(null)
-	const peerConnectionService = useRef<PeerConnectionService | null>(null)
 
-	if (!peerConnectionService.current) {
-		peerConnectionService.current = new PeerConnectionService(
-			dispatch,
-			mediaStreamService.current as MediaStreamService,
-			JSON.parse(ENV_CONFIG.VITE_APP_ICE_SERVERS)
-		)
-	}
 	if (!callSessionService.current) {
-		callSessionService.current = new CallSessionService(
-			dispatch,
-			peerConnectionService.current as PeerConnectionService,
-			channelId,
-			userId
-		)
+		callSessionService.current = new CallSessionService(dispatch, channelId, userId)
 	}
 
+	const onCreatePeerConnection = useCallback(
+		(
+			remoteUser: { socketId: string; userId: string; nickname: string; joinedAt: string },
+			direction: 'offer' | 'answer',
+			offer?: RTCSessionDescriptionInit
+		) => {
+			if (!mediaStreamService.current || !callSessionService.current || peerConnectionsRef.current.has(remoteUser.userId)) {
+				return
+			}
+
+			const connection = new PeerConnectionService(
+				dispatch,
+				mediaStreamService.current,
+				callSessionService.current.sendCandidate,
+				JSON.parse(ENV_CONFIG.VITE_APP_ICE_SERVERS),
+				remoteUser.userId
+			)
+
+			if (!remoteUsersRef.current.has(remoteUser.userId)) {
+				remoteUsersRef.current.set(remoteUser.userId, remoteUser)
+			}
+
+			peerConnectionsRef.current.set(remoteUser.userId, connection)
+			callSessionService.current.addPeerConnection(remoteUser.userId, connection)
+
+			// Применить накопленные ICE candidates
+			const pendingCandidates = pendingIceCandidatesRef.current.get(remoteUser.userId)
+			if (pendingCandidates) {
+				pendingCandidates.forEach((candidate) => {
+					connection.receiveRemoteIceCandidate(candidate).catch(console.error)
+				})
+				pendingIceCandidatesRef.current.delete(remoteUser.userId)
+			}
+
+			if (direction === 'offer') {
+				callSessionService.current.sendOffer(remoteUser.userId).catch(console.error)
+				return
+			}
+			if (direction === 'answer' && offer) {
+				callSessionService.current.sendAnswer(remoteUser.userId, offer).catch(console.error)
+			}
+		},
+		[dispatch, mediaStreamService, userId]
+	)
 	const onTrack = useCallback(
 		(userId: string, tracks: MediaStreamTrack[]) => {
-			if (!remoteIdRef.current || !containerRef.current) return
+			if (!remoteUsersRef.current.get(userId) || !containerRef.current) return
 
 			const mediaStream = new MediaStream()
 
@@ -59,7 +103,6 @@ export const useCall = (channelId: string) => {
 				foundedVideoElement.srcObject = mediaStream
 				foundedVideoElement.setAttribute('data-user-id', userId)
 				foundedVideoElement.play().catch(console.error)
-				// foundedVideoElement.load()
 				return
 			}
 
@@ -100,136 +143,112 @@ export const useCall = (channelId: string) => {
 		}
 	}, [channelId, userId])
 
+	// Обработать буферизованных пользователей когда медиа загружены
 	useEffect(() => {
-		if (!callSessionService.current || Object.keys(iceCandidates).length === 0) return
+		if (!isLoadedMedia || pendingUsersToConnectRef.current.length === 0) {
+			return
+		}
 
-		const keys = Object.keys(iceCandidates)
-
-		callSessionService.current.sendCandidate(
-			JSON.parse(Object.keys(iceCandidates)[keys.length - 1]) as RTCIceCandidate,
-			remoteIdRef.current ?? ''
-		)
-	}, [iceCandidates])
+		pendingUsersToConnectRef.current.forEach((user) => onCreatePeerConnection(user, 'offer'))
+		pendingUsersToConnectRef.current = []
+	}, [isLoadedMedia, onCreatePeerConnection])
 
 	useEffect(() => {
 		if (
 			!callSessionService.current ||
-			!peerConnectionService.current ||
+			!mediaStreamService.current ||
 			!lastMessage ||
-			!lastMessage.topic ||
 			!lastMessage.topic
+			// !isLoadedMedia
 		) {
 			return
 		}
 
+		console.log(lastMessage)
+
 		switch (lastMessage.topic) {
+			case 'existing-users': {
+				const users = existingUsersSchema.parse(lastMessage).data
+				if (!isLoadedMedia) {
+					pendingUsersToConnectRef.current = users
+					break
+				}
+				users.forEach((user) => onCreatePeerConnection(user, 'offer'))
+				break
+			}
 			case 'user-connected': {
-				const parsed = z
-					.object({
-						topic: z.literal('user-connected'),
-						timestamp: z.number(),
-						data: z.object({
-							socketId: z.string(),
-							userId: z.string(),
-							nickname: z.string(),
-							joinedAt: z.string()
-						})
-					})
-					.parse(lastMessage)
+				const parsed = userConnectedSchema.parse(lastMessage)
 
 				if (parsed.data.userId === userId) {
 					return
 				}
 
-				remoteIdRef.current = parsed.data.userId
-
-				peerConnectionService.current.setRemoteId(parsed.data.userId)
-				callSessionService.current.sendOffer(parsed.data.userId).catch(console.error)
+				remoteUsersRef.current.set(parsed.data.userId, parsed.data)
 				break
 			}
 			case 'user-disconnected': {
-				const parsed = z
-					.object({
-						topic: z.literal('user-disconnected'),
-						data: z.string(),
-						timestamp: z.number()
-					})
-					.parse(lastMessage)
+				const parsed = userDisconnectedSchema.parse(lastMessage)
 
 				onRemoveVideo(`video[data-user-id="${parsed.data}"]`)
 
-				peerConnectionService.current = new PeerConnectionService(
-					dispatch,
-					mediaStreamService.current as MediaStreamService,
-					JSON.parse(ENV_CONFIG.VITE_APP_ICE_SERVERS)
-				)
+				const connection = peerConnectionsRef.current.get(parsed.data)
 
-				callSessionService.current = new CallSessionService(
-					dispatch,
-					peerConnectionService.current as PeerConnectionService,
-					channelId,
-					userId
-				)
+				if (!connection) {
+					console.warn('No actual connection found in buffer for delete')
+					return
+				}
 
+				connection.close()
+				remoteUsersRef.current.delete(parsed.data)
+				peerConnectionsRef.current.delete(parsed.data)
+				callSessionService.current.removePeerConnection(parsed.data)
+				mediaStreamService.current.clearCurrentRemoteTrack(parsed.data)
 				break
 			}
 			case 'offer': {
-				const parsed = z
-					.object({
-						topic: z.literal('offer'),
-						data: z.object({
-							senderUserId: z.string(),
-							offer: z.object({
-								sdp: z.string(),
-								type: z.enum(['answer', 'offer', 'pranswer', 'rollback'] as const)
-							})
-						})
-					})
-					.parse(lastMessage)
-				remoteIdRef.current = parsed.data.senderUserId
+				const parsed = offerSchema.parse(lastMessage)
 
-				peerConnectionService.current.setRemoteId(parsed.data.senderUserId)
-				callSessionService.current.sendAnswer(parsed.data.senderUserId, parsed.data.offer).catch(console.error)
+				const remoteUser = remoteUsersRef.current.get(parsed.data.senderUserId)
+
+				if (!remoteUser) {
+					console.error('Lifecycle is dead. trying create pc before saving user data in storage')
+					break
+				}
+
+				onCreatePeerConnection(remoteUser, 'answer', parsed.data.offer)
 				break
 			}
 			case 'answer': {
-				const parsed = z
-					.object({
-						topic: z.literal('answer'),
-						timestamp: z.number(),
-						data: z.object({
-							senderUserId: z.string(),
-							answer: z.object({
-								sdp: z.string(),
-								type: z.enum(['answer', 'offer', 'pranswer', 'rollback'] as const)
-							})
-						})
-					})
-					.parse(lastMessage)
+				const parsed = answerSchema.parse(lastMessage)
 
-				remoteIdRef.current = parsed.data.senderUserId
+				const connection = peerConnectionsRef.current.get(parsed.data.senderUserId)
 
-				peerConnectionService.current.setRemoteId(parsed.data.senderUserId)
-				callSessionService.current.setRemoteDescription(parsed.data.answer).catch(console.error)
+				if (!connection) {
+					console.error('No actual connection found in buffer for delete')
+					break
+				}
+
+				connection.setRemoteDescription(parsed.data.answer).catch(console.error)
 				break
 			}
 			case 'ice-candidate': {
-				const parsed = z
-					.object({
-						topic: z.literal('ice-candidate'),
-						timestamp: z.number(),
-						data: z.object({
-							senderUserId: z.string(),
-							candidate: z.any()
-						})
-					})
-					.parse(lastMessage)
+				const parsed = iceCandidateSchema.parse(lastMessage)
 
-				callSessionService.current.receiveIceCandidate(parsed.data.candidate).catch(console.error)
+				const connection = peerConnectionsRef.current.get(parsed.data.senderUserId)
+
+				if (!connection) {
+					// Буферизуем ICE candidate если PeerConnection ещё не создан
+					const pending = pendingIceCandidatesRef.current.get(parsed.data.senderUserId) ?? []
+					pending.push(parsed.data.candidate)
+					pendingIceCandidatesRef.current.set(parsed.data.senderUserId, pending)
+					break
+				}
+
+				connection.receiveRemoteIceCandidate(parsed.data.candidate).catch(console.error)
 				break
 			}
 		}
-	}, [lastMessage, userId])
+	}, [lastMessage, userId, isLoadedMedia, mediaStreamService, onCreatePeerConnection, onRemoveVideo])
 
 	return {
 		ref,

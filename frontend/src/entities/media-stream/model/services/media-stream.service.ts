@@ -54,6 +54,10 @@ export class MediaStreamService {
 		}
 	}
 
+	public clearCurrentRemoteTrack = (userId: string) => {
+		this.remoteTracks.delete(userId)
+	}
+
 	public addTrack(track: MediaStreamTrack): void {
 		this.tracks.add(track)
 	}
@@ -76,9 +80,7 @@ export class MediaStreamService {
 			this.remoteTracks.set(userId, [...previousTracks, track])
 		}
 
-		console.log('qwe1')
 		if (this.onTrackRemoteExternal) {
-			console.log('qwe')
 			this.onTrackRemoteExternal(userId, this.remoteTracks.get(userId) ?? [])
 		}
 	}

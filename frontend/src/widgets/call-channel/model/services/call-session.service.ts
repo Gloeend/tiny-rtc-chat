@@ -4,24 +4,31 @@ import type { Dispatch } from 'react'
 
 export class CallSessionService {
 	private readonly dispatch: Dispatch<unknown>
-	private peerConnectionService: PeerConnectionService
+	private peerConnectionServiceMap: Map<string, PeerConnectionService> = new Map<string, PeerConnectionService>()
 	private channelId: string
 	private userId: string
 
-	constructor(dispatch: Dispatch<unknown>, peerConnectionService: PeerConnectionService, channelId: string, userId: string) {
-		this.peerConnectionService = peerConnectionService
+	constructor(dispatch: Dispatch<unknown>, channelId: string, userId: string) {
 		this.dispatch = dispatch
 		this.channelId = channelId
 		this.userId = userId
 	}
 
+	public addPeerConnection(targetId: string, peerConnectionService: PeerConnectionService) {
+		this.peerConnectionServiceMap.set(targetId, peerConnectionService)
+	}
+
+	public removePeerConnection(targetId: string) {
+		this.peerConnectionServiceMap.delete(targetId)
+	}
+
 	public joinChannel() {
-		this.dispatch(socketActions.subscribe('offer'))
-		this.dispatch(socketActions.subscribe('ice-candidate'))
-		this.dispatch(socketActions.subscribe('answer'))
-		this.dispatch(socketActions.subscribe('user-connected'))
-		this.dispatch(socketActions.subscribe('user-disconnected'))
 		this.dispatch(socketActions.subscribe('existing-users'))
+		this.dispatch(socketActions.subscribe('user-connected'))
+		this.dispatch(socketActions.subscribe('offer'))
+		this.dispatch(socketActions.subscribe('answer'))
+		this.dispatch(socketActions.subscribe('ice-candidate'))
+		this.dispatch(socketActions.subscribe('user-disconnected'))
 		this.dispatch(
 			socketActions.send('join-room', {
 				roomId: this.channelId,
@@ -34,17 +41,24 @@ export class CallSessionService {
 		this.dispatch(socketActions.send('leave-room', channelId))
 	}
 
-	public sendCandidate(candidate: RTCIceCandidate, userId: string) {
+	public sendCandidate = (candidate: RTCIceCandidate, userId: string) => {
 		this.dispatch(
 			socketActions.send('ice-candidate', {
 				targetUserId: userId,
-				candidate: candidate
+				candidate: candidate.toJSON()
 			})
 		)
 	}
 
 	public sendOffer = async (targetId: string) => {
-		const offer = await this.peerConnectionService.createOffer()
+		const connection = this.peerConnectionServiceMap.get(targetId)
+
+		if (!connection) {
+			console.log(`No peer connection found with targetId: ${targetId}`)
+			return
+		}
+
+		const offer = await connection.createOffer()
 
 		if (!offer) {
 			console.error('RTCPeerConnectionService.createOffer() error', offer)
@@ -58,7 +72,14 @@ export class CallSessionService {
 		)
 	}
 	public sendAnswer = async (targetId: string, offer: RTCSessionDescriptionInit) => {
-		const answer = await this.peerConnectionService.createAnswer(offer)
+		const connection = this.peerConnectionServiceMap.get(targetId)
+
+		if (!connection) {
+			console.log(`No peer connection found with targetId: ${targetId}`)
+			return
+		}
+
+		const answer = await connection.createAnswer(offer)
 
 		if (!offer) {
 			console.error('RTCPeerConnectionService.createOffer() error', answer)
@@ -70,16 +91,5 @@ export class CallSessionService {
 				answer: answer
 			})
 		)
-	}
-	public setRemoteDescription = async (answer: RTCSessionDescriptionInit) => {
-		await this.peerConnectionService.setRemoteDescription(answer)
-	}
-
-	public receiveIceCandidate = async (candidate: RTCIceCandidateInit) => {
-		if (!this.peerConnectionService) {
-			return
-		}
-
-		await this.peerConnectionService.receiveRemoteIceCandidate(candidate)
 	}
 }

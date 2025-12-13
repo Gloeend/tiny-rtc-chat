@@ -8,13 +8,23 @@ export class PeerConnectionService {
 	private mediaStreamService: MediaStreamService
 	private offer: RTCSessionDescriptionInit | null = null
 	private remoteId: string | null = null
+	private onIceCandidateCallback: (candidate: RTCIceCandidate, targetId: string) => void
+	private pendingCandidates: RTCIceCandidateInit[] = []
 
-	constructor(dispatch: (action: unknown) => void, mediaStreamService: MediaStreamService, iceServers: RTCIceServer[]) {
+	constructor(
+		dispatch: (action: unknown) => void,
+		mediaStreamService: MediaStreamService,
+		onIceCandidateCallback: (candidate: RTCIceCandidate, targetId: string) => void,
+		iceServers: RTCIceServer[],
+		remoteId: string
+	) {
 		this.dispatch = dispatch
 		this.mediaStreamService = mediaStreamService
+		this.onIceCandidateCallback = onIceCandidateCallback
 		this.peerConnection = new RTCPeerConnection({
 			iceServers: iceServers
 		})
+		this.remoteId = remoteId
 
 		this.peerConnectionEvents()
 	}
@@ -29,11 +39,8 @@ export class PeerConnectionService {
 		this.peerConnection.onicegatheringstatechange = this.onIceGatheringStateChange
 	}
 
-	public setRemoteId(remoteId: string): void {
-		this.remoteId = remoteId
-	}
-
 	private onTrack = (ev: RTCTrackEvent) => {
+		console.log('receive track', ev)
 		if (!this.remoteId) {
 			return
 		}
@@ -47,7 +54,7 @@ export class PeerConnectionService {
 	}
 
 	private onIceCandidate = (ev: RTCPeerConnectionIceEvent) => {
-		if (!ev.candidate) {
+		if (!ev.candidate || !this.remoteId) {
 			return
 		}
 
@@ -55,9 +62,7 @@ export class PeerConnectionService {
 			return
 		}
 
-		const candidate = ev.candidate.toJSON()
-
-		this.dispatch(rtcSessionSliceActions.setIceCandidate(candidate))
+		this.onIceCandidateCallback(ev.candidate, this.remoteId)
 	}
 
 	private onIceGatheringStateChange = () => {
@@ -70,7 +75,20 @@ export class PeerConnectionService {
 		if (!this.peerConnection) {
 			return
 		}
+
+		if (!this.peerConnection.remoteDescription) {
+			this.pendingCandidates.push(candidate)
+			return
+		}
+
 		await this.peerConnection.addIceCandidate(candidate)
+	}
+
+	private flushPendingCandidates = async () => {
+		for (const candidate of this.pendingCandidates) {
+			await this.peerConnection?.addIceCandidate(candidate)
+		}
+		this.pendingCandidates = []
 	}
 
 	private onIceCandidateError = (ev: RTCPeerConnectionIceErrorEvent) => {
@@ -91,17 +109,14 @@ export class PeerConnectionService {
 		if (!this.peerConnection) {
 			return
 		}
-		await new Promise((resolve) => setTimeout(resolve, 1000))
+
 		this.mediaStreamService.getTracks().forEach((track) => {
 			if (!this.peerConnection) return
 			this.peerConnection.addTrack(track)
 		})
+
 		this.offer = await this.peerConnection.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true })
 		await this.peerConnection.setLocalDescription(this.offer)
-		return this.offer
-	}
-
-	public getOffer = () => {
 		return this.offer
 	}
 
@@ -109,6 +124,7 @@ export class PeerConnectionService {
 		if (!this.peerConnection) return
 
 		await this.peerConnection.setRemoteDescription(offer)
+		await this.flushPendingCandidates()
 
 		this.mediaStreamService.getTracks().forEach((track) => {
 			this.peerConnection!.addTrack(track)
@@ -124,17 +140,14 @@ export class PeerConnectionService {
 		if (!this.peerConnection) {
 			return
 		}
-		console.log('remote desc', remoteDescription)
+
 		await this.peerConnection.setRemoteDescription(remoteDescription)
+		await this.flushPendingCandidates()
 	}
 
 	public close() {
 		this.peerConnection?.close()
 		this.peerConnection = null
 		this.mediaStreamService.clear()
-	}
-
-	public getPeerConnection(): RTCPeerConnection | null {
-		return this.peerConnection
 	}
 }
