@@ -10,17 +10,18 @@ class RoomService {
     this.startCleanup();
   }
 
-  createRoom(): Room {
+  createRoom(name: string, maxParticipants?: number): Room {
     const roomId = uuidv4();
     const room: Room = {
       id: roomId,
+      name,
       participants: [],
       createdAt: new Date(),
-      maxParticipants: config.room.maxParticipants,
+      maxParticipants: maxParticipants ?? config.room.maxParticipants,
     };
 
     this.rooms.set(roomId, room);
-    console.log(`Room created: ${roomId}`);
+    console.log(`Room created: ${roomId} (${name})`);
     return room;
   }
 
@@ -30,6 +31,22 @@ class RoomService {
 
   getAllRoomIds(): string[] {
     return Array.from(this.rooms.keys());
+  }
+
+  getAllRoomsInfo(): Array<{
+    id: string;
+    name: string;
+    participantCount: number;
+    maxParticipants: number;
+    createdAt: Date;
+  }> {
+    return Array.from(this.rooms.values()).map(room => ({
+      id: room.id,
+      name: room.name,
+      participantCount: room.participants.length,
+      maxParticipants: room.maxParticipants,
+      createdAt: room.createdAt,
+    }));
   }
 
   deleteRoom(roomId: string): boolean {

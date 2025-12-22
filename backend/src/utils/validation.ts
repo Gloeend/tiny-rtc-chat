@@ -1,4 +1,5 @@
-import { JoinRoomData, OfferData, AnswerData, IceCandidateData } from '../types/index.js';
+import { JoinRoomData, OfferData, AnswerData, IceCandidateData, CreateRoomData } from '../types/index.js';
+import { config } from '../config/index.js';
 
 export class ValidationError extends Error {
   constructor(message: string) {
@@ -86,4 +87,34 @@ export const validateIceCandidateData = (data: unknown): IceCandidateData => {
   }
 
   return { targetUserId, candidate };
+};
+
+export const validateCreateRoomData = (data: unknown): CreateRoomData => {
+  if (!data || typeof data !== 'object') {
+    throw new ValidationError('Invalid create room data');
+  }
+
+  const { name, maxParticipants } = data as Partial<CreateRoomData>;
+
+  if (!name || typeof name !== 'string' || name.trim().length === 0) {
+    throw new ValidationError('Room name is required');
+  }
+
+  if (name.trim().length > 100) {
+    throw new ValidationError('Room name must be 100 characters or less');
+  }
+
+  if (maxParticipants !== undefined) {
+    if (typeof maxParticipants !== 'number' || !Number.isInteger(maxParticipants)) {
+      throw new ValidationError('Max participants must be an integer');
+    }
+    if (maxParticipants < 2 || maxParticipants > config.room.maxParticipants) {
+      throw new ValidationError(`Max participants must be between 2 and ${config.room.maxParticipants}`);
+    }
+  }
+
+  return {
+    name: name.trim(),
+    maxParticipants,
+  };
 };

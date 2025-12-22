@@ -43,6 +43,7 @@ interface Participant {
 ```typescript
 interface Room {
   id: string;              // UUID комнаты
+  name: string;            // Название комнаты
   participants: Participant[];  // Список участников
   createdAt: Date;         // Время создания
   maxParticipants: number; // Максимум участников (по умолчанию: 10)
@@ -53,6 +54,7 @@ interface Room {
 ```json
 {
   "id": "c57cd5a1-bae9-4411-9675-61e561a246a1",
+  "name": "Gaming Room",
   "participants": [
     {
       "socketId": "abc123",
@@ -63,6 +65,27 @@ interface Room {
   ],
   "createdAt": "2024-11-25T12:00:00.000Z",
   "maxParticipants": 10
+}
+```
+
+---
+
+### CreateRoomData
+
+Данные для создания комнаты.
+
+```typescript
+interface CreateRoomData {
+  name: string;            // Название комнаты (обязательное, макс. 100 символов)
+  maxParticipants?: number; // Максимум участников (2-10, по умолчанию: 10)
+}
+```
+
+**Example:**
+```json
+{
+  "name": "My Gaming Room",
+  "maxParticipants": 5
 }
 ```
 
@@ -194,12 +217,18 @@ Health check endpoint для мониторинга.
 
 #### `GET /api/rooms`
 
-Получить список всех активных комнат.
+Получить список всех активных комнат с полной информацией.
 
 **Response:** `200 OK`
 ```typescript
 {
-  rooms: string[];  // Массив UUID комнат
+  rooms: Array<{
+    id: string;              // UUID комнаты
+    name: string;            // Название комнаты
+    participantCount: number; // Текущее количество участников
+    maxParticipants: number;  // Максимум участников
+    createdAt: string;        // ISO 8601 timestamp
+  }>;
 }
 ```
 
@@ -207,8 +236,20 @@ Health check endpoint для мониторинга.
 ```json
 {
   "rooms": [
-    "c57cd5a1-bae9-4411-9675-61e561a246a1",
-    "d68de6b2-cbfa-5522-a786-72f672b357b2"
+    {
+      "id": "c57cd5a1-bae9-4411-9675-61e561a246a1",
+      "name": "Gaming Room",
+      "participantCount": 3,
+      "maxParticipants": 10,
+      "createdAt": "2024-11-25T12:00:00.000Z"
+    },
+    {
+      "id": "d68de6b2-cbfa-5522-a786-72f672b357b2",
+      "name": "Work Meeting",
+      "participantCount": 0,
+      "maxParticipants": 5,
+      "createdAt": "2024-11-25T12:05:00.000Z"
+    }
   ]
 }
 ```
@@ -219,25 +260,44 @@ Health check endpoint для мониторинга.
 
 Создать новую комнату.
 
+**Request Body:**
+```typescript
+{
+  name: string;            // Название комнаты (обязательное, макс. 100 символов)
+  maxParticipants?: number; // Максимум участников (2-10, по умолчанию: 10)
+}
+```
+
+**Example Request:**
+```json
+{
+  "name": "My Gaming Room",
+  "maxParticipants": 5
+}
+```
+
 **Response:** `201 Created`
 ```typescript
 {
   roomId: string;          // UUID новой комнаты
+  name: string;            // Название комнаты
   maxParticipants: number; // Максимум участников
   createdAt: string;       // ISO 8601 timestamp
 }
 ```
 
-**Example:**
+**Example Response:**
 ```json
 {
   "roomId": "c57cd5a1-bae9-4411-9675-61e561a246a1",
-  "maxParticipants": 10,
+  "name": "My Gaming Room",
+  "maxParticipants": 5,
   "createdAt": "2024-11-25T12:00:00.000Z"
 }
 ```
 
 **Errors:**
+- `400 Bad Request` - Ошибка валидации (отсутствует name, превышена длина, некорректный maxParticipants)
 - `500 Internal Server Error` - Ошибка создания комнаты
 
 ---
@@ -253,6 +313,7 @@ Health check endpoint для мониторинга.
 ```typescript
 {
   id: string;              // UUID комнаты
+  name: string;            // Название комнаты
   participantCount: number; // Текущее количество участников
   maxParticipants: number;  // Максимум участников
   createdAt: string;        // ISO 8601 timestamp
@@ -263,8 +324,9 @@ Health check endpoint для мониторинга.
 ```json
 {
   "id": "c57cd5a1-bae9-4411-9675-61e561a246a1",
+  "name": "My Gaming Room",
   "participantCount": 3,
-  "maxParticipants": 10,
+  "maxParticipants": 5,
   "createdAt": "2024-11-25T12:00:00.000Z"
 }
 ```
@@ -275,34 +337,7 @@ Health check endpoint для мониторинга.
 
 ---
 
-#### `DELETE /api/rooms/:id`
-
-Удалить комнату и отключить всех участников.
-
-**Parameters:**
-- `id` (path) - UUID комнаты
-
-**Response:** `200 OK`
-```typescript
-{
-  message: string;  // Сообщение об успехе
-}
-```
-
-**Example:**
-```json
-{
-  "message": "Room deleted successfully"
-}
-```
-
-**Side Effects:**
-- Всем участникам отправляется событие `room-closed`
-- Все участники отключаются от комнаты
-
-**Errors:**
-- `404 Not Found` - Комната не найдена
-- `500 Internal Server Error` - Внутренняя ошибка сервера
+> **Note:** Ручное удаление комнат отключено для безопасности. Пустые комнаты автоматически удаляются после таймаута (см. `config.room.emptyRoomTimeout`).
 
 ---
 
@@ -545,6 +580,32 @@ socket.on('room-closed', () => {
 
 ---
 
+#### `room-created`
+
+Создана новая комната. Broadcast всем подключенным клиентам.
+
+**Payload:**
+```typescript
+{
+  id: string;              // UUID комнаты
+  name: string;            // Название комнаты
+  participantCount: number; // Текущее количество участников (0)
+  maxParticipants: number;  // Максимум участников
+  createdAt: string;        // ISO 8601 timestamp
+}
+```
+
+**Example:**
+```javascript
+socket.on('room-created', (room) => {
+  console.log('New room created:', room.name, room.id);
+  // Добавить комнату в UI список
+  rooms.push(room);
+});
+```
+
+---
+
 #### `offer`
 
 Получен WebRTC offer от другого участника.
@@ -742,7 +803,7 @@ CORS_ORIGIN=http://localhost:5173      # CORS origin
 room: {
   maxParticipants: 10,       // Максимум участников в комнате
   cleanupInterval: 60000,    // Интервал очистки (мс)
-  emptyRoomTimeout: 300000,  // Таймаут пустой комнаты (мс)
+  emptyRoomTimeout: 3600000, // Таймаут пустой комнаты (мс) - 1 час
 }
 ```
 
