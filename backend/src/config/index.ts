@@ -9,6 +9,6 @@ export const config = {
   room: {
     maxParticipants: 10,
     cleanupInterval: 60000, // 1 minute
-    emptyRoomTimeout: 300000, // 5 minutes
+    emptyRoomTimeout: 3600000, // 1 hour
   },
 };

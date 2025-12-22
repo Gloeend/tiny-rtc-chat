@@ -86,20 +86,50 @@ GET /api/rooms
 **Ответ:**
 ```json
 {
-  "rooms": ["uuid-1", "uuid-2"]
+  "rooms": [
+    {
+      "id": "uuid-1",
+      "name": "Gaming Room",
+      "participantCount": 3,
+      "maxParticipants": 10,
+      "createdAt": "2024-11-25T12:00:00.000Z"
+    },
+    {
+      "id": "uuid-2",
+      "name": "Work Meeting",
+      "participantCount": 0,
+      "maxParticipants": 5,
+      "createdAt": "2024-11-25T12:05:00.000Z"
+    }
+  ]
 }
 ```
 
 #### Создать комнату
 ```http
 POST /api/rooms
+Content-Type: application/json
 ```
+
+**Тело запроса:**
+```json
+{
+  "name": "My Room",
+  "maxParticipants": 5
+}
+```
+
+| Поле | Тип | Обязательное | Описание |
+|------|-----|--------------|----------|
+| name | string | Да | Название комнаты (макс. 100 символов) |
+| maxParticipants | number | Нет | Максимум участников (2-10, по умолчанию 10) |
 
 **Ответ:**
 ```json
 {
   "roomId": "uuid",
-  "maxParticipants": 10,
+  "name": "My Room",
+  "maxParticipants": 5,
   "createdAt": "2024-11-25T12:00:00.000Z"
 }
 ```
@@ -113,21 +143,10 @@ GET /api/rooms/:id
 ```json
 {
   "id": "uuid",
+  "name": "My Room",
   "participantCount": 3,
-  "maxParticipants": 10,
+  "maxParticipants": 5,
   "createdAt": "2024-11-25T12:00:00.000Z"
-}
-```
-
-#### Удалить комнату
-```http
-DELETE /api/rooms/:id
-```
-
-**Ответ:**
-```json
-{
-  "message": "Room deleted successfully"
 }
 ```
 
@@ -233,6 +252,21 @@ socket.on('room-closed', () => {
 });
 ```
 
+##### `room-created`
+Создана новая комната (broadcast всем подключенным клиентам).
+
+```typescript
+socket.on('room-created', (room: {
+  id: string;
+  name: string;
+  participantCount: number;
+  maxParticipants: number;
+  createdAt: string;
+}) => {
+  // Добавить комнату в список
+});
+```
+
 ##### `offer`
 Получен WebRTC offer от другого участника.
 
@@ -278,7 +312,7 @@ socket.on('error', (message: string) => {
 
 - **Максимум участников:** 10 человек
 - **Интервал очистки:** 60 секунд
-- **Таймаут пустой комнаты:** 5 минут
+- **Таймаут пустой комнаты:** 1 час
 
 Настраивается в `src/config/index.ts`:
 
@@ -286,7 +320,7 @@ socket.on('error', (message: string) => {
 room: {
   maxParticipants: 10,
   cleanupInterval: 60000,      // 1 минута
-  emptyRoomTimeout: 300000,    // 5 минут
+  emptyRoomTimeout: 3600000,   // 1 час
 }
 ```
 
@@ -298,8 +332,13 @@ room: {
 // 1. Создать комнату через REST API
 const response = await fetch('http://localhost:3001/api/rooms', {
   method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    name: 'My Gaming Room',
+    maxParticipants: 5,
+  }),
 });
-const { roomId } = await response.json();
+const { roomId, name } = await response.json();
 
 // 2. Подключиться через WebSocket
 import { io } from 'socket.io-client';

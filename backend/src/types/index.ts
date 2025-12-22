@@ -10,9 +10,15 @@ export interface Participant {
 
 export interface Room {
   id: string;
+  name: string;
   participants: Participant[];
   createdAt: Date;
   maxParticipants: number;
+}
+
+export interface CreateRoomData {
+  name: string;
+  maxParticipants?: number;
 }
 
 // WebRTC signaling types
@@ -38,11 +44,21 @@ export interface JoinRoomData {
   nickname?: string;
 }
 
+// Room info for broadcasting
+export interface RoomInfo {
+  id: string;
+  name: string;
+  participantCount: number;
+  maxParticipants: number;
+  createdAt: Date;
+}
+
 export interface ServerToClientEvents {
   'user-connected': (participant: Participant) => void;
   'user-disconnected': (userId: string) => void;
   'existing-users': (participants: Participant[]) => void;
   'room-closed': () => void;
+  'room-created': (room: RoomInfo) => void;
   'error': (message: string) => void;
   'offer': (data: { offer: any; senderUserId: string }) => void;
   'answer': (data: { answer: any; senderUserId: string }) => void;
