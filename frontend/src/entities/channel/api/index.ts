@@ -1,6 +1,6 @@
 import { httpBaseApi } from '@shared/config/http-config'
 
-import type { CreateRoomResponseDTO, GetRoomByIdResponseDTO, GetRoomsResponseDTO } from '../model/types'
+import type { CreateRoomBodyDTO, CreateRoomResponseDTO, GetRoomsResponseDTO } from '../model/types'
 
 export const channelRtkApi = httpBaseApi.injectEndpoints({
 	endpoints: (build) => ({
@@ -12,42 +12,32 @@ export const channelRtkApi = httpBaseApi.injectEndpoints({
 				}
 			}
 		}),
-		createRoom: build.mutation<CreateRoomResponseDTO, void>({
-			query: () => {
+		createRoom: build.mutation<CreateRoomResponseDTO, CreateRoomBodyDTO>({
+			query: (dto) => {
 				return {
 					url: '/api/rooms',
-					method: 'post'
+					method: 'post',
+					data: dto
 				}
 			},
 			async onQueryStarted(_, { dispatch, queryFulfilled }) {
-				const tempId = `temp-${Date.now()}`
-
-				const patchResult = dispatch(
-					channelRtkApi.util.updateQueryData('getRooms', undefined, (draft) => {
-						draft.rooms.unshift(tempId)
-					})
-				)
-
 				try {
 					const { data } = await queryFulfilled
+
 					dispatch(
 						channelRtkApi.util.updateQueryData('getRooms', undefined, (draft) => {
-							const index = draft.rooms.indexOf(tempId)
-							if (index !== -1) {
-								draft.rooms[index] = data.roomId
-							}
+							draft.rooms.push({
+								id: data.roomId,
+								name: data.name,
+								maxParticipants: data.maxParticipants,
+								createdAt: new Date(data.createdAt),
+								participants: [],
+								participantCount: 0
+							})
 						})
 					)
-				} catch {
-					patchResult.undo()
-				}
-			}
-		}),
-		getRoomById: build.query<GetRoomByIdResponseDTO, string>({
-			query: (roomId) => {
-				return {
-					url: `/api/rooms/${roomId}`,
-					method: 'get'
+				} catch (e) {
+					console.error(e)
 				}
 			}
 		})
