@@ -31,7 +31,6 @@ export const useCall = (channelId: string) => {
 	)
 
 	const pendingIceCandidatesRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map())
-
 	const pendingUsersToConnectRef = useRef<{ socketId: string; userId: string; nickname: string; joinedAt: string }[]>([])
 
 	const { userId } = useAppSelector(getUser)
@@ -68,7 +67,6 @@ export const useCall = (channelId: string) => {
 			peerConnectionsRef.current.set(remoteUser.userId, connection)
 			callSessionService.current.addPeerConnection(remoteUser.userId, connection)
 
-			// Применить накопленные ICE candidates
 			const pendingCandidates = pendingIceCandidatesRef.current.get(remoteUser.userId)
 			if (pendingCandidates) {
 				pendingCandidates.forEach((candidate) => {
@@ -85,7 +83,7 @@ export const useCall = (channelId: string) => {
 				callSessionService.current.sendAnswer(remoteUser.userId, offer).catch(console.error)
 			}
 		},
-		[dispatch, mediaStreamService, userId]
+		[dispatch, mediaStreamService]
 	)
 	const onTrack = useCallback(
 		(userId: string, tracks: MediaStreamTrack[]) => {

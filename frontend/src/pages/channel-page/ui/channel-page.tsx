@@ -1,5 +1,5 @@
 import { AppRoutes, RoutePath } from '@shared/config/routes-config'
-import { useCopyClipboardByAttribute } from '@shared/lib/hooks/use-copy-clipboard-by-attribute.ts'
+import { useCopyClipboardByAttribute } from '@shared/lib'
 import { CallChannel } from '@widgets/call-channel'
 import { Copy } from 'lucide-react'
 import { Navigate, useParams } from 'react-router'

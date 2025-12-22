@@ -1,8 +1,7 @@
 import { ChannelCard, channelRtkApi } from '@entities/channel'
 import { CreateChannel } from '@features/create-channel'
 import { AppRoutes, RoutePath } from '@shared/config/routes-config'
-import { cn } from '@shared/lib'
-import { useCopyClipboardByAttribute } from '@shared/lib/hooks/use-copy-clipboard-by-attribute'
+import { cn, useCopyClipboardByAttribute } from '@shared/lib'
 import { Plus } from 'lucide-react'
 import { memo, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router'
@@ -24,13 +23,16 @@ export const ChannelList = memo(({ className }: { className?: string }) => {
 
 	const memoizedList = useMemo(
 		() =>
-			channels.rooms.map((channelId) => (
-				<li key={channelId}>
+			channels.rooms.map((channel) => (
+				<li key={channel.id}>
 					<ChannelCard
-						id={channelId}
+						id={channel.id}
+						name={channel.name}
+						maxParticipants={channel.maxParticipants}
+						participantCount={channel.participantCount}
 						onClickClipboard={onCopyClipboard}
 						onClick={() => {
-							handleChannelClick(channelId)
+							handleChannelClick(channel.id)
 						}}
 					/>
 				</li>

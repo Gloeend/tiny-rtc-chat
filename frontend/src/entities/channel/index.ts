@@ -8,4 +8,4 @@ export { ChannelCard } from './ui/channel-card'
 
 export { channelRtkApi } from './api'
 
-export { useCreateChannel } from './lib/hooks/use-create-room'
+export { useCreateChannel } from './lib/hooks/use-create-channel.ts'
