@@ -1,6 +1,5 @@
 import type { DeviceChanges } from '../types'
 
-// TODO: Написать хук для инициализации стримов (собираем сервисы в кучу малу) ../lib/hooks/use-media-stream
 export class MediaDevicesService {
 	async requestPermissions(
 		constraints: { video?: boolean; audio?: boolean } = { video: true, audio: true }

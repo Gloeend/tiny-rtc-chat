@@ -92,4 +92,12 @@ export class MediaStreamService {
 		})
 		this.tracks.clear()
 	}
+
+	public clearRemoteTracks(remoteId: string) {
+		this.remoteTracks.get(remoteId)?.forEach((track) => {
+			track.enabled = false
+			track.stop()
+		})
+		this.remoteTracks.delete(remoteId)
+	}
 }
