@@ -146,8 +146,10 @@ export class PeerConnectionService {
 	}
 
 	public close() {
-		this.peerConnection?.close()
+		if (!this.remoteId || !this.peerConnection) return
+
+		this.peerConnection.close()
 		this.peerConnection = null
-		this.mediaStreamService.clear()
+		this.mediaStreamService.clearRemoteTracks(this.remoteId)
 	}
 }

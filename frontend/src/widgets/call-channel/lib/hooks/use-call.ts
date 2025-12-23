@@ -141,7 +141,6 @@ export const useCall = (channelId: string) => {
 		}
 	}, [channelId, userId])
 
-	// Обработать буферизованных пользователей когда медиа загружены
 	useEffect(() => {
 		if (!isLoadedMedia || pendingUsersToConnectRef.current.length === 0) {
 			return
@@ -152,17 +151,9 @@ export const useCall = (channelId: string) => {
 	}, [isLoadedMedia, onCreatePeerConnection])
 
 	useEffect(() => {
-		if (
-			!callSessionService.current ||
-			!mediaStreamService.current ||
-			!lastMessage ||
-			!lastMessage.topic
-			// !isLoadedMedia
-		) {
+		if (!callSessionService.current || !mediaStreamService.current || !lastMessage || !lastMessage.topic) {
 			return
 		}
-
-		console.log(lastMessage)
 
 		switch (lastMessage.topic) {
 			case 'existing-users': {
@@ -235,7 +226,6 @@ export const useCall = (channelId: string) => {
 				const connection = peerConnectionsRef.current.get(parsed.data.senderUserId)
 
 				if (!connection) {
-					// Буферизуем ICE candidate если PeerConnection ещё не создан
 					const pending = pendingIceCandidatesRef.current.get(parsed.data.senderUserId) ?? []
 					pending.push(parsed.data.candidate)
 					pendingIceCandidatesRef.current.set(parsed.data.senderUserId, pending)
