@@ -1,9 +1,5 @@
 import { useMediaStream } from '@entities/media-stream'
 import { PeerConnectionService } from '@entities/rtc-session'
-import { getSocketLastMessage } from '@entities/socket'
-import { getUser } from '@entities/user'
-import { ENV_CONFIG } from '@shared/config/environment-config'
-import { useAppDispatch, useAppSelector } from '@shared/lib'
 import {
 	answerSchema,
 	existingUsersSchema,
@@ -11,24 +7,27 @@ import {
 	offerSchema,
 	userConnectedSchema,
 	userDisconnectedSchema
-} from '@widgets/call-channel/model/schemas/call-events.schema.ts'
-import { useCallback, useEffect, useRef } from 'react'
-
-import { CallSessionService } from '../../model/services/call-session.service'
-
-import { useGenericVideoRender } from './use-generic-video-render'
+} from '@entities/rtc-session/model/schemas/call-events.schema.ts'
+import { CallSessionService } from '@entities/rtc-session/model/services/call-session.service.ts'
+import { getSocketLastMessage } from '@entities/socket'
+import { getUser } from '@entities/user'
+import { ENV_CONFIG } from '@shared/config/environment-config'
+import { useAppDispatch, useAppSelector } from '@shared/lib'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 export const useCall = (channelId: string) => {
 	const dispatch = useAppDispatch()
-
-	const { ref: containerRef, onAddVideo, onRemoveVideo } = useGenericVideoRender()
 	const { ref, mediaStreamService, isLoadedMedia } = useMediaStream()
 
 	const peerConnectionsRef = useRef<Map<string, PeerConnectionService>>(new Map())
 
-	const remoteUsersRef = useRef<Map<string, { nickname: string; joinedAt: string; socketId: string; userId: string }>>(
-		new Map()
-	)
+	const remoteUsersRef = useRef<
+		Map<string, { nickname: string; joinedAt: string; socketId: string; userId: string; mediaStream?: MediaStream }>
+	>(new Map())
+
+	const [preparedRemoteUsers, setPreparedRemoteUsers] = useState<
+		Array<{ nickname: string; joinedAt: string; socketId: string; userId: string; mediaStream: MediaStream }>
+	>([])
 
 	const pendingIceCandidatesRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map())
 	const pendingUsersToConnectRef = useRef<{ socketId: string; userId: string; nickname: string; joinedAt: string }[]>([])
@@ -85,37 +84,32 @@ export const useCall = (channelId: string) => {
 		},
 		[dispatch, mediaStreamService]
 	)
-	const onTrack = useCallback(
-		(userId: string, tracks: MediaStreamTrack[]) => {
-			if (!remoteUsersRef.current.get(userId) || !containerRef.current) return
+	const onTrack = useCallback((userId: string, tracks: MediaStreamTrack[]) => {
+		const remoteUser = remoteUsersRef.current.get(userId)
 
-			const mediaStream = new MediaStream()
+		if (!remoteUser) return
 
-			tracks.forEach((track) => {
-				mediaStream.addTrack(track)
-			})
+		const mediaStream = new MediaStream()
 
-			const foundedVideoElement = containerRef.current.querySelector<HTMLVideoElement>(`video[data-user-id="${userId}"]`)
+		tracks.forEach((track) => {
+			mediaStream.addTrack(track)
+		})
 
-			if (foundedVideoElement) {
-				foundedVideoElement.srcObject = mediaStream
-				foundedVideoElement.setAttribute('data-user-id', userId)
-				foundedVideoElement.play().catch(console.error)
-				return
+		setPreparedRemoteUsers((prev) => {
+			const foundedUserIndex = prev.findIndex((needle) => needle.userId === remoteUser.userId)
+
+			if (foundedUserIndex !== -1) {
+				return prev.map((user, index) => (index === foundedUserIndex ? { ...user, mediaStream } : user))
 			}
 
-			const videoElement = onAddVideo()
+			return [...prev, { ...remoteUser, mediaStream }]
+		})
 
-			if (!videoElement) {
-				return
-			}
-
-			videoElement.srcObject = mediaStream
-			videoElement.setAttribute('data-user-id', userId)
-			videoElement.play().catch(console.error)
-		},
-		[containerRef, onAddVideo]
-	)
+		remoteUsersRef.current.set(userId, {
+			...remoteUser,
+			mediaStream
+		})
+	}, [])
 
 	useEffect(() => {
 		if (!mediaStreamService.current) {
@@ -178,7 +172,9 @@ export const useCall = (channelId: string) => {
 			case 'user-disconnected': {
 				const parsed = userDisconnectedSchema.parse(lastMessage)
 
-				onRemoveVideo(`video[data-user-id="${parsed.data}"]`)
+				setPreparedRemoteUsers((prev) => {
+					return prev.filter((needle) => needle.userId !== parsed.data)
+				})
 
 				const connection = peerConnectionsRef.current.get(parsed.data)
 
@@ -236,10 +232,10 @@ export const useCall = (channelId: string) => {
 				break
 			}
 		}
-	}, [lastMessage, userId, isLoadedMedia, mediaStreamService, onCreatePeerConnection, onRemoveVideo])
+	}, [lastMessage, userId, isLoadedMedia, mediaStreamService, onCreatePeerConnection])
 
 	return {
 		ref,
-		containerRef
+		users: preparedRemoteUsers
 	}
 }
