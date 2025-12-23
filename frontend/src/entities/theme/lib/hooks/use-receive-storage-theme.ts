@@ -13,7 +13,10 @@ export const useReceiveStorageTheme = () => {
 
 		const parsed = themeSchema.safeParse(theme)
 
-		if (parsed.error) return
+		if (parsed.error) {
+			dispatch(themeSliceActions.setTheme('DARK'))
+			return
+		}
 
 		dispatch(themeSliceActions.setTheme(parsed.data))
 	}, [dispatch])
