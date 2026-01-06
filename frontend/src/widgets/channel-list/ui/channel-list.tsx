@@ -1,4 +1,4 @@
-import { ChannelCard, channelRtkApi } from '@entities/channel'
+import { ChannelCard, channelRtkApi, useObserveChannel } from '@entities/channel'
 import { CreateChannel } from '@features/create-channel'
 import { AppRoutes, RoutePath } from '@shared/config/routes-config'
 import { cn, useCopyClipboardByAttribute } from '@shared/lib'
@@ -12,6 +12,8 @@ export const ChannelList = memo(({ className }: { className?: string }) => {
 	const { data: channels = { rooms: [] }, isLoading } = channelRtkApi.useGetRoomsQuery()
 	const onCopyClipboard = useCopyClipboardByAttribute<HTMLButtonElement>('data-id')
 	const navigate = useNavigate()
+
+	useObserveChannel()
 
 	const handleChannelClick = useCallback(
 		(channelId: string) => {

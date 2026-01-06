@@ -8,14 +8,14 @@ export type Participant = {
 export type Channel = {
 	id: string
 	participants: Participant[]
-	createdAt: Date
+	createdAt: string
 	name: string
 	maxParticipants: number
-	participantCount: 0
+	participantCount: number
 }
 
 export type GetRoomsResponseDTO = {
-	rooms: Channel[]
+	rooms: Omit<Channel, 'participants'>[]
 }
 
 export type GetRoomByIdResponseDTO = Channel
