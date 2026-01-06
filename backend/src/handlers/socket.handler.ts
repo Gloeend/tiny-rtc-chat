@@ -1,5 +1,5 @@
 import { Server } from 'socket.io';
-import { TypedSocket } from '../types/index.js';
+import { TypedSocket, RoomInfo } from '../types/index.js';
 import { roomService } from '../services/room.service.js';
 import {
   validateJoinRoomData,
@@ -7,8 +7,23 @@ import {
   validateOfferData,
   validateAnswerData,
   validateIceCandidateData,
+  validateToggleCameraData,
   ValidationError,
 } from '../utils/validation.js';
+
+const emitRoomUpdated = (io: Server, roomId: string): void => {
+  const room = roomService.getRoom(roomId);
+  if (room) {
+    const roomInfo: RoomInfo = {
+      id: room.id,
+      name: room.name,
+      participantCount: room.participants.length,
+      maxParticipants: room.maxParticipants,
+      createdAt: room.createdAt,
+    };
+    io.emit('room-updated', roomInfo);
+  }
+};
 
 export const setupSocketHandlers = (io: Server): void => {
   io.on('connection', (socket: TypedSocket) => {
@@ -17,7 +32,7 @@ export const setupSocketHandlers = (io: Server): void => {
     // Join room handler
     socket.on('join-room', (data) => {
       try {
-        const { roomId, userId, nickname } = validateJoinRoomData(data);
+        const { roomId, userId, nickname, isCameraEnabled } = validateJoinRoomData(data);
         const room = roomService.getRoom(roomId);
 
         if (!room) {
@@ -25,7 +40,7 @@ export const setupSocketHandlers = (io: Server): void => {
           return;
         }
 
-        const participant = roomService.addParticipant(roomId, socket.id, userId, nickname);
+        const participant = roomService.addParticipant(roomId, socket.id, userId, nickname, isCameraEnabled);
 
         if (!participant) {
           socket.emit('error', 'Could not join room. Room might be full.');
@@ -43,6 +58,9 @@ export const setupSocketHandlers = (io: Server): void => {
         if (otherParticipants.length > 0) {
           socket.emit('existing-users', otherParticipants);
         }
+
+        // Broadcast room update to all clients
+        emitRoomUpdated(io, roomId);
 
         console.log(`User ${participant.nickname} joined room ${roomId} (${room.participants.length}/${room.maxParticipants})`);
       } catch (error) {
@@ -65,6 +83,7 @@ export const setupSocketHandlers = (io: Server): void => {
         if (removed && userId) {
           socket.to(roomId).emit('user-disconnected', userId);
           socket.leave(roomId);
+          emitRoomUpdated(io, roomId);
           console.log(`User ${userId} left room ${roomId}`);
         }
       } catch (error) {
@@ -166,6 +185,31 @@ export const setupSocketHandlers = (io: Server): void => {
       }
     });
 
+    // Toggle camera handler
+    socket.on('toggle-camera', (data) => {
+      try {
+        const { roomId, isEnabled } = validateToggleCameraData(data);
+        const result = roomService.updateParticipantCamera(socket.id, isEnabled);
+
+        if (!result) {
+          socket.emit('error', 'You must join a room first');
+          return;
+        }
+
+        // Notify all other participants in the room
+        socket.to(roomId).emit('camera-toggled', {
+          userId: result.userId,
+          isEnabled,
+        });
+      } catch (error) {
+        if (error instanceof ValidationError) {
+          socket.emit('error', error.message);
+        } else {
+          console.error('Error in toggle-camera:', error);
+        }
+      }
+    });
+
     // Disconnect handler
     socket.on('disconnect', () => {
       // Get userId before removing from rooms
@@ -179,6 +223,7 @@ export const setupSocketHandlers = (io: Server): void => {
       if (userId) {
         affectedRooms.forEach(roomId => {
           socket.to(roomId).emit('user-disconnected', userId);
+          emitRoomUpdated(io, roomId);
         });
       }
     });

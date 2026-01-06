@@ -6,6 +6,7 @@ import { config } from './config/index.js';
 import { createRoomRouter } from './handlers/room.handler.js';
 import { setupSocketHandlers } from './handlers/socket.handler.js';
 import { ServerToClientEvents, ClientToServerEvents } from './types/index.js';
+import { roomService } from './services/room.service.js';
 
 // Initialize Express app
 const app = express();
@@ -28,6 +29,14 @@ app.use('/api', createRoomRouter(io));
 
 // Setup Socket.IO handlers
 setupSocketHandlers(io);
+
+// Notify clients when room is deleted
+roomService.onRoomDeleted((roomId, roomInfo) => {
+  // Notify participants in the room
+  io.to(roomId).emit('room-closed', roomInfo);
+  // Broadcast to all clients (for lobby/room list)
+  io.emit('room-closed', roomInfo);
+});
 
 // Health check endpoint
 app.get('/health', (_req, res) => {

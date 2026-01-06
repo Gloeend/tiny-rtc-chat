@@ -6,6 +6,7 @@ export interface Participant {
   userId: string;
   nickname: string;
   joinedAt: Date;
+  isCameraEnabled: boolean;
 }
 
 export interface Room {
@@ -37,11 +38,17 @@ export interface IceCandidateData {
   candidate: any;
 }
 
+export interface ToggleCameraData {
+  roomId: string;
+  isEnabled: boolean;
+}
+
 // Socket events
 export interface JoinRoomData {
   roomId: string;
   userId?: string;
   nickname?: string;
+  isCameraEnabled?: boolean;
 }
 
 // Room info for broadcasting
@@ -57,12 +64,14 @@ export interface ServerToClientEvents {
   'user-connected': (participant: Participant) => void;
   'user-disconnected': (userId: string) => void;
   'existing-users': (participants: Participant[]) => void;
-  'room-closed': () => void;
+  'room-closed': (room: RoomInfo) => void;
   'room-created': (room: RoomInfo) => void;
+  'room-updated': (room: RoomInfo) => void;
   'error': (message: string) => void;
   'offer': (data: { offer: any; senderUserId: string }) => void;
   'answer': (data: { answer: any; senderUserId: string }) => void;
   'ice-candidate': (data: { candidate: any; senderUserId: string }) => void;
+  'camera-toggled': (data: { userId: string; isEnabled: boolean }) => void;
 }
 
 export interface ClientToServerEvents {
@@ -71,6 +80,7 @@ export interface ClientToServerEvents {
   'offer': (data: OfferData) => void;
   'answer': (data: AnswerData) => void;
   'ice-candidate': (data: IceCandidateData) => void;
+  'toggle-camera': (data: ToggleCameraData) => void;
 }
 
 export type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
