@@ -5,9 +5,14 @@ import { config } from '../config/index.js';
 class RoomService {
   private rooms = new Map<string, Room>();
   private cleanupInterval?: NodeJS.Timeout;
+  private onRoomDeletedCallback?: (roomId: string, roomInfo: { id: string; name: string; participantCount: number; maxParticipants: number; createdAt: Date }) => void;
 
   constructor() {
     this.startCleanup();
+  }
+
+  onRoomDeleted(callback: (roomId: string, roomInfo: { id: string; name: string; participantCount: number; maxParticipants: number; createdAt: Date }) => void): void {
+    this.onRoomDeletedCallback = callback;
   }
 
   createRoom(name: string, maxParticipants?: number): Room {
@@ -50,14 +55,26 @@ class RoomService {
   }
 
   deleteRoom(roomId: string): boolean {
+    const room = this.rooms.get(roomId);
+    if (!room) return false;
+
+    const roomInfo = {
+      id: room.id,
+      name: room.name,
+      participantCount: room.participants.length,
+      maxParticipants: room.maxParticipants,
+      createdAt: room.createdAt,
+    };
+
     const deleted = this.rooms.delete(roomId);
     if (deleted) {
       console.log(`Room deleted: ${roomId}`);
+      this.onRoomDeletedCallback?.(roomId, roomInfo);
     }
     return deleted;
   }
 
-  addParticipant(roomId: string, socketId: string, userId?: string, nickname?: string): Participant | null {
+  addParticipant(roomId: string, socketId: string, userId?: string, nickname?: string, isCameraEnabled = true): Participant | null {
     const room = this.rooms.get(roomId);
     if (!room) {
       console.error(`Room not found: ${roomId}`);
@@ -80,11 +97,23 @@ class RoomService {
       userId: userId || socketId,
       nickname: nickname || `User${socketId.substring(0, 4)}`,
       joinedAt: new Date(),
+      isCameraEnabled,
     };
 
     room.participants.push(participant);
     console.log(`Participant ${participant.nickname} (${socketId}) joined room ${roomId}`);
     return participant;
+  }
+
+  updateParticipantCamera(socketId: string, isEnabled: boolean): { roomId: string; userId: string } | null {
+    for (const [roomId, room] of this.rooms.entries()) {
+      const participant = room.participants.find(p => p.socketId === socketId);
+      if (participant) {
+        participant.isCameraEnabled = isEnabled;
+        return { roomId, userId: participant.userId };
+      }
+    }
+    return null;
   }
 
   removeParticipant(roomId: string, socketId: string): boolean {

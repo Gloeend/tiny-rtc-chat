@@ -8,4 +8,5 @@ export { ChannelCard } from './ui/channel-card'
 
 export { channelRtkApi } from './api'
 
-export { useCreateChannel } from './lib/hooks/use-create-channel.ts'
+export { useCreateChannel } from './lib/hooks/use-create-channel'
+export { useObserveChannel } from './lib/hooks/use-observe-channel'

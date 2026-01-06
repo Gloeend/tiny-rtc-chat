@@ -67,6 +67,7 @@ export const useCall = (channelId: string) => {
 			callSessionService.current.addPeerConnection(remoteUser.userId, connection)
 
 			const pendingCandidates = pendingIceCandidatesRef.current.get(remoteUser.userId)
+
 			if (pendingCandidates) {
 				pendingCandidates.forEach((candidate) => {
 					connection.receiveRemoteIceCandidate(candidate).catch(console.error)

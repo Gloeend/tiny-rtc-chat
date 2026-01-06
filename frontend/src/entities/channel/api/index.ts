@@ -19,26 +19,6 @@ export const channelRtkApi = httpBaseApi.injectEndpoints({
 					method: 'post',
 					data: dto
 				}
-			},
-			async onQueryStarted(_, { dispatch, queryFulfilled }) {
-				try {
-					const { data } = await queryFulfilled
-
-					dispatch(
-						channelRtkApi.util.updateQueryData('getRooms', undefined, (draft) => {
-							draft.rooms.push({
-								id: data.roomId,
-								name: data.name,
-								maxParticipants: data.maxParticipants,
-								createdAt: new Date(data.createdAt),
-								participants: [],
-								participantCount: 0
-							})
-						})
-					)
-				} catch (e) {
-					console.error(e)
-				}
 			}
 		})
 	})
