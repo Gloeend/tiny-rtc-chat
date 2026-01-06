@@ -1,4 +1,4 @@
-import { JoinRoomData, OfferData, AnswerData, IceCandidateData, CreateRoomData } from '../types/index.js';
+import { JoinRoomData, OfferData, AnswerData, IceCandidateData, CreateRoomData, ToggleCameraData } from '../types/index.js';
 import { config } from '../config/index.js';
 
 export class ValidationError extends Error {
@@ -27,11 +27,13 @@ export const validateJoinRoomData = (data: unknown): JoinRoomData => {
     throw new ValidationError('Invalid join room data');
   }
 
-  const { roomId, userId } = data as Partial<JoinRoomData>;
+  const { roomId, userId, nickname, isCameraEnabled } = data as Partial<JoinRoomData>;
 
   return {
     roomId: validateRoomId(roomId),
     userId: userId ? validateUserId(userId) : undefined,
+    nickname,
+    isCameraEnabled: typeof isCameraEnabled === 'boolean' ? isCameraEnabled : true,
   };
 };
 
@@ -116,5 +118,22 @@ export const validateCreateRoomData = (data: unknown): CreateRoomData => {
   return {
     name: name.trim(),
     maxParticipants,
+  };
+};
+
+export const validateToggleCameraData = (data: unknown): ToggleCameraData => {
+  if (!data || typeof data !== 'object') {
+    throw new ValidationError('Invalid toggle camera data');
+  }
+
+  const { roomId, isEnabled } = data as Partial<ToggleCameraData>;
+
+  if (typeof isEnabled !== 'boolean') {
+    throw new ValidationError('isEnabled must be a boolean');
+  }
+
+  return {
+    roomId: validateRoomId(roomId),
+    isEnabled,
   };
 };

@@ -566,15 +566,24 @@ socket.on('existing-users', (participants) => {
 
 #### `room-closed`
 
-Комната была закрыта администратором.
+Комната была удалена (по таймауту пустой комнаты или вручную). Broadcast всем подключенным клиентам.
 
-**Payload:** none
+**Payload:**
+```typescript
+{
+  id: string;              // UUID комнаты
+  name: string;            // Название комнаты
+  participantCount: number; // Количество участников на момент удаления
+  maxParticipants: number;  // Максимум участников
+  createdAt: string;        // ISO 8601 timestamp
+}
+```
 
 **Example:**
 ```javascript
-socket.on('room-closed', () => {
-  console.log('Room was closed');
-  // Закрыть все соединения и покинуть комнату
+socket.on('room-closed', (room) => {
+  console.log(`Room ${room.name} was closed`);
+  // Удалить комнату из списка / закрыть соединения
 });
 ```
 
@@ -603,6 +612,40 @@ socket.on('room-created', (room) => {
   rooms.push(room);
 });
 ```
+
+---
+
+#### `room-updated`
+
+Информация о комнате обновилась (изменилось количество участников). Broadcast всем подключенным клиентам.
+
+**Payload:**
+```typescript
+{
+  id: string;              // UUID комнаты
+  name: string;            // Название комнаты
+  participantCount: number; // Текущее количество участников
+  maxParticipants: number;  // Максимум участников
+  createdAt: string;        // ISO 8601 timestamp
+}
+```
+
+**Example:**
+```javascript
+socket.on('room-updated', (room) => {
+  console.log('Room updated:', room.name, room.participantCount);
+  // Обновить информацию о комнате в UI
+  const existingRoom = rooms.find(r => r.id === room.id);
+  if (existingRoom) {
+    existingRoom.participantCount = room.participantCount;
+  }
+});
+```
+
+**Triggers:**
+- Пользователь присоединился к комнате (`join-room`)
+- Пользователь покинул комнату (`leave-room`)
+- Пользователь отключился (`disconnect`)
 
 ---
 
@@ -767,6 +810,7 @@ class ValidationError extends Error {
 3. Client → Server: emit('join-room', { roomId, userId, nickname })
    Server → Client: emit('existing-users', [participants])
    Server → Other Clients: emit('user-connected', participant)
+   Server → All Clients: emit('room-updated', roomInfo)
 
 4. For each existing user:
    Client → Server: emit('offer', { targetUserId, offer })
@@ -784,6 +828,7 @@ class ValidationError extends Error {
 6. On disconnect:
    Client → Server: emit('leave-room', roomId)
    Server → Other Clients: emit('user-disconnected', userId)
+   Server → All Clients: emit('room-updated', roomInfo)
 ```
 
 ---
