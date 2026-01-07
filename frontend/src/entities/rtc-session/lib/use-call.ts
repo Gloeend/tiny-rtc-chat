@@ -121,7 +121,7 @@ export const useCall = (channelId: string) => {
 	}, [mediaStreamService, onTrack])
 
 	useEffect(() => {
-		if (!callSessionService.current) {
+		if (!callSessionService.current || !isLoadedMedia) {
 			return
 		}
 
@@ -134,7 +134,7 @@ export const useCall = (channelId: string) => {
 
 			callSessionService.current.leaveChannel(channelId)
 		}
-	}, [channelId, userId])
+	}, [channelId, userId, isLoadedMedia])
 
 	useEffect(() => {
 		if (!isLoadedMedia || pendingUsersToConnectRef.current.length === 0) {
